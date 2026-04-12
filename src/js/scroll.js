@@ -151,7 +151,7 @@ function _initFrameDebug() {
 }
 
 function _setupMainScrubber() {
-  const debugEl      = _initFrameDebug()
+  const debugEl      = { textContent: '' } // _initFrameDebug() — disabled
   _snapLabelEl       = _initSnapLabel()
   const snaps        = CONFIG.baseSnaps ?? []
   const { totalFrames }  = CONFIG.scroll
