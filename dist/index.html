@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PHOS — Light for slower moments</title>
+  <script type="module" crossorigin src="/assets/index-CO6TnYWc.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C_675saV.css">
+</head>
+<body>
+
+  <!-- Canvas: Three.js renders here -->
+  <canvas id="phos-canvas"></canvas>
+
+  <!-- Dark overlay — dims scene during hero, fades on Begin experience -->
+  <div id="hero-dim"></div>
+
+  <!-- ─── SCENE TRANSITION VEIL ────────────────────────────── -->
+  <!-- Sits between canvas (z:0) and UI (z:10).               -->
+  <!-- Fades to black during the hero→product scene swap.      -->
+  <div id="scene-veil"></div>
+
+  <!-- ─── LOADING SCREEN ────────────────────────────────────── -->
+  <div id="loader">
+    <div class="loader-inner">
+      <span class="loader-wordmark">PHOS</span>
+      <div class="loader-bar-track">
+        <div class="loader-bar" id="loader-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── HERO OVERLAY ─────────────────────────────────────── -->
+  <div id="hero-overlay">
+
+    <!-- Center group: brand mark + tagline -->
+    <div id="hero-center">
+
+      <!-- Brand mark — starts large centered, shrinks to top-left on activation -->
+      <div id="brand-mark">
+        <span class="brand-name">Phōs</span>
+      </div>
+
+      <!-- Hero copy -->
+      <div id="hero-copy">
+        <p class="hero-tagline">Light for slower moments</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Begin button: fixed bottom-center, outside overlay flow -->
+  <button id="begin-btn">Begin experience</button>
+
+  <!-- Corner logo: fades in after activation, replaces hero brand mark -->
+  <div id="corner-logo">Phōs</div>
+
+  <!-- Scroll hint: fades in on activation, fades out on first scroll -->
+  <div id="scroll-hint">Scroll to navigate</div>
+
+  <!-- ─── PERSISTENT UI ────────────────────────────────────── -->
+
+  <!-- Top-right navigation -->
+  <nav id="main-nav">
+
+    <!-- Top row: sound icon + menu toggle side by side -->
+    <div id="nav-top-row">
+
+      <button id="sound-toggle" aria-label="Toggle sound">
+        <!-- Waveform: path is 3 periods wide, group travels left for seamless loop -->
+        <svg id="icon-waveform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 20" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" style="overflow:hidden">
+          <g id="wave-group">
+            <!-- starts at x=-16 (one period before visible area) so travel is seamless from the left -->
+            <path id="waveform-path" d="M-14,10 C-11.1,10 -8.9,10 -6,10 C-3.1,10 -0.9,10 2,10 C4.9,10 7.1,10 10,10 C12.9,10 15.1,10 18,10 C20.9,10 23.1,10 26,10 C28.9,10 31.1,10 34,10 C36.9,10 39.1,10 42,10 C44.9,10 47.1,10 50,10"/>
+          </g>
+        </svg>
+      </button>
+
+      <button id="menu-toggle" aria-expanded="false">Menu</button>
+
+    </div>
+
+    <!-- Dropdown items -->
+    <div id="menu-items" aria-hidden="true">
+      <a href="#" class="nav-link" data-section="overview">Overview</a>
+      <a href="#" class="nav-link" data-section="design">Design</a>
+      <a href="#" class="nav-link" data-section="details">Details</a>
+      <a href="#" class="nav-link" data-section="inside">Inside</a>
+      <a href="#" class="nav-link" data-section="custom">Custom</a>
+      <a href="#" class="nav-link" data-section="origin">Origin</a>
+    </div>
+
+  </nav>
+
+  <!-- ─── CUSTOMIZATION PANEL ──────────────────────────────── -->
+  <aside id="custom-panel">
+    <p class="panel-label">Make it yours</p>
+
+    <div class="panel-section">
+      <span class="panel-section-label">Base</span>
+      <div class="swatch-row swatch-row--images" id="base-swatches">
+        <button class="swatch-img swatch--base active" data-base="0" aria-label="Helios">
+          <img src="/images/helios.png" alt="Helios" />
+          <span class="swatch-img-label">Helios</span>
+        </button>
+        <button class="swatch-img swatch--base" data-base="1" aria-label="Eos">
+          <img src="/images/eos.png" alt="Eos" />
+          <span class="swatch-img-label">Eos</span>
+        </button>
+        <button class="swatch-img swatch--base" data-base="2" aria-label="Apolo">
+          <img src="/images/apolo.png" alt="Apolo" />
+          <span class="swatch-img-label">Apolo</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <span class="panel-section-label">Pantalla</span>
+      <div class="screen-toggle" id="shade-swatches">
+        <button class="shade-option swatch--shade active" data-shade="0" aria-label="Green screen">Green</button>
+        <button class="shade-option swatch--shade" data-shade="1" aria-label="White screen">White</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <span class="panel-section-label">Light</span>
+      <div class="slider-row">
+        <svg class="slider-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="4"/>
+          <line x1="12" y1="2" x2="12" y2="5"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+          <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+          <line x1="2" y1="12" x2="5" y2="12"/>
+          <line x1="19" y1="12" x2="22" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+          <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+        </svg>
+        <input type="range" id="light-slider" min="0" max="100" value="60" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── SCROLL TEXT OVERLAYS ─────────────────────────────── -->
+  <!-- Text blocks are injected here by scroll.js at runtime.  -->
+  <!-- Each div gets id="text-{sectionId}" from config.        -->
+  <div id="scroll-text-layer" aria-live="polite"></div>
+
+  <!-- ─── SCROLL LAYOUT ────────────────────────────────────── -->
+
+  <!-- Hero spacer: creates scroll room before product animation starts -->
+  <div id="hero-spacer"></div>
+
+  <!-- Product scroll stage: its scroll distance drives the animation.  -->
+  <!-- Height is set in CSS from CONFIG.scroll.scrollVH (default 700vh) -->
+  <div id="product-scroll-stage"></div>
+
+  <!-- ─── GALLERY SECTION ──────────────────────────────────── -->
+  <section id="gallery-section">
+    <div id="gallery-track">
+
+      <!-- Intro text card — first slide -->
+      <div class="gallery-intro">
+        <p class="gallery-intro-heading">Made for<br>living spaces</p>
+        <p class="gallery-intro-line">From quiet corners</p>
+        <p class="gallery-intro-line">to shared rooms.</p>
+        <p class="gallery-intro-line">From arrival</p>
+        <p class="gallery-intro-line">to rest.</p>
+      </div>
+
+      <!-- Placeholder image cards                                      -->
+      <!-- Replace the inner <div class="card-image"> with <img> tags   -->
+      <!-- when photography is ready.                                   -->
+      <article class="gallery-card" data-room="bedroom">
+        <div class="card-image" style="background-image: url('/images/bedroom.jpg'); background-size: cover; background-position: center;"></div>
+        <p class="card-label">Bedroom</p>
+      </article>
+
+      <article class="gallery-card" data-room="living-room">
+        <div class="card-image" style="background-image: url('/images/living.jpg'); background-size: cover; background-position: center;"></div>
+        <p class="card-label">Living Room</p>
+      </article>
+
+      <article class="gallery-card" data-room="library">
+        <div class="card-image" style="background-image: url('/images/library.jpg'); background-size: cover; background-position: center;"></div>
+        <p class="card-label">Library</p>
+      </article>
+
+      <article class="gallery-card" data-room="hallway">
+        <div class="card-image" style="background-image: url('/images/hallway.jpg'); background-size: cover; background-position: center;"></div>
+        <p class="card-label">Hallway</p>
+      </article>
+
+      <article class="gallery-card" data-room="study">
+        <div class="card-image" style="background-image: url('/images/study.jpg'); background-size: cover; background-position: center;"></div>
+        <p class="card-label">Study</p>
+      </article>
+
+      <!-- ─── LOOP CARD (last carousel item) ─────────────────── -->
+      <!-- This card scales up to fullscreen as the user keeps    -->
+      <!-- scrolling, looping the experience back to the hero.    -->
+      <!-- ─────────────────────────────────────────────────────── -->
+      <!-- PLACEHOLDER: replace the inner div with an <img> tag   -->
+      <!-- when the hero photograph is ready. Keep the class       -->
+      <!-- "loop-card-image" so the ScrollTrigger target is intact.-->
+      <!-- The image should match the opening 3D hero scene        -->
+      <!-- (lamp on desk, warm light, same camera angle).          -->
+      <article class="gallery-card gallery-card--loop">
+        <div class="loop-card-image"></div>
+      </article>
+      <!-- END LOOP CARD ─────────────────────────────────────────  -->
+
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ───────────────────────────────────────────── -->
+  <footer id="site-footer">
+    <span class="footer-brand">PHOS</span>
+    <span class="footer-copy">Designed and made in Uruguay</span>
+  </footer>
+
+</body>
+</html>

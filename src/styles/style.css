@@ -1,0 +1,1211 @@
+/* ─────────────────────────────────────────────────────────────
+   style.css — PHOS visual language
+   Premium · Warm · Calm · Editorial · Minimal
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Aeonik font ─────────────────────────────────────────────── */
+/* Add font files to /public/fonts/ matching these names.        */
+/* If your files use different names, update the src paths below. */
+@font-face {
+  font-family: 'Aeonik';
+  src: url('/fonts/AeonikTRIAL-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aeonik';
+  src: url('/fonts/AeonikTRIAL-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aeonik';
+  src: url('/fonts/AeonikTRIAL-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style:  normal;
+  font-display: swap;
+}
+
+/* ── Custom properties ───────────────────────────────────────── */
+:root {
+  /* Palette */
+  --color-bg:          #1a1714;
+  --color-surface:     #211f1c;
+  --color-warm:        #c8a96e;
+  --color-warm-light:  #e6c88a;
+  --color-text:        #f0ebe3;
+  --color-text-muted:  #c4bdb4;
+  --color-line:        rgba(200, 169, 110, 0.18);
+
+  /* Typography — Aeonik with system fallback */
+  --font-sans: 'Aeonik', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* Spacing */
+  --edge: clamp(24px, 4vw, 56px);
+
+  /* Transitions */
+  --ease-calm: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin:     0;
+  padding:    0;
+}
+
+html {
+  width:      100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  width:      100%;
+  min-height: 100%;
+  background: var(--color-bg);
+  color:      var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* overflow-x handled on html — do NOT add overflow-x:hidden here,
+     it breaks GSAP ScrollTrigger's scroll measurements */
+}
+
+/* ── Canvas ──────────────────────────────────────────────────── */
+#phos-canvas {
+  position:   fixed;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  display:    block;
+  z-index:    0;
+  filter:     blur(12px);
+  transition: filter 1.4s ease;
+}
+
+#phos-canvas.is-active {
+  filter: blur(0px);
+}
+
+#hero-dim {
+  position:   fixed;
+  inset:      0;
+  z-index:    1;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  transition: opacity 1.4s ease;
+}
+
+#hero-dim.is-gone {
+  opacity: 0;
+}
+
+/* ── Loader ──────────────────────────────────────────────────── */
+#loader {
+  position:  fixed;
+  inset:     0;
+  z-index:   100;
+  display:   flex;
+  align-items:     center;
+  justify-content: center;
+  background: var(--color-bg);
+}
+
+.loader-inner {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            20px;
+}
+
+.loader-wordmark {
+  font-size:      13px;
+  letter-spacing: 0.35em;
+  color:          var(--color-warm);
+  font-weight:    400;
+}
+
+.loader-bar-track {
+  width:         120px;
+  height:        1px;
+  background:    rgba(200, 169, 110, 0.2);
+  overflow:      hidden;
+}
+
+.loader-bar {
+  height:     100%;
+  width:      0%;
+  background: var(--color-warm);
+  transition: width 0.2s ease;
+}
+
+/* ── Hero overlay ────────────────────────────────────────────── */
+/* Full-screen container — centers the brand mark + copy group   */
+#hero-overlay {
+  position:        fixed;
+  inset:           0;
+  z-index:         10;
+  pointer-events:  none;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+}
+
+/* Center group: brand mark + tagline stacked vertically */
+#hero-center {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  text-align:      center;
+  gap:             clamp(8px, 1.5vh, 14px);
+  pointer-events:  none;
+}
+
+/* ── Brand mark ──────────────────────────────────────────────── */
+/* Starts centered and large. On activation GSAP animates it     */
+/* to the top-left corner at a small size.                       */
+#brand-mark {
+  opacity:        0;          /* revealed by GSAP */
+  pointer-events: none;
+  text-align:     center;
+}
+
+#hero-logo {
+  display:      block;
+  height:       72px;
+  width:        auto;
+  margin:       0 auto 16px;
+  object-fit:   contain;
+}
+
+/* Large hero state */
+.brand-name {
+  display:        block;
+  font-family:    'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:      clamp(36px, 5vw, 64px);
+  font-weight:    400;
+  letter-spacing: 0;
+  color:          var(--color-text);
+  line-height:    1;
+}
+
+.brand-sub {
+  display:        block;
+  font-family:    var(--font-sans);
+  font-size:      clamp(14px, 1.6vw, 22px);
+  letter-spacing: 0;
+  color:          var(--color-warm);
+  margin-top:     14px;
+  font-weight:    400;
+}
+
+/* Scroll hint — fades in on activation, fades on scroll */
+#scroll-hint {
+  position:        fixed;
+  bottom:          var(--edge);
+  left:            50%;
+  transform:       translateX(-50%);
+  z-index:         20;
+  font-family:     'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:       18px;
+  font-weight:     400;
+  letter-spacing:  0;
+  color:           #ffffff;
+  opacity:         0;
+  pointer-events:  none;
+  white-space:     nowrap;
+}
+
+/* Corner logo — fades in after activation */
+#corner-logo {
+  position:       fixed;
+  top:            var(--edge);
+  left:           var(--edge);
+  z-index:        20;
+  display:        flex;
+  align-items:    center;
+  gap:            10px;
+  font-family:    'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:      22px;
+  font-weight:    400;
+  letter-spacing: 0;
+  color:          var(--color-text);
+  opacity:        0;
+  pointer-events: none;
+  cursor:         pointer;
+}
+
+.corner-logo-img {
+  height:     12px;
+  width:      auto;
+  object-fit: contain;
+  display:    block;
+}
+
+#credit-studio,
+#credit-filamento {
+  position:       fixed;
+  bottom:         var(--edge);
+  z-index:        20;
+  font-family:    'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:      18px;
+  font-weight:    400;
+  letter-spacing: 0;
+  color:          #ffffff;
+  pointer-events: none;
+}
+
+#credit-studio    { left:  var(--edge); opacity: 0; transition: opacity 1s ease; }
+#credit-filamento { right: var(--edge); opacity: 0; transition: opacity 1s ease; }
+
+#corner-logo.is-visible {
+  pointer-events: all;
+}
+
+/* ── Hero copy ───────────────────────────────────────────────── */
+#hero-copy {
+  opacity:        0;      /* revealed by GSAP */
+  pointer-events: none;
+  text-align:     center;
+}
+
+.hero-tagline {
+  font-family:    'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:      clamp(18px, 2vw, 28px);
+  font-weight:    300;
+  letter-spacing: 0;
+  color:          var(--color-text);
+  margin-bottom:  0;
+}
+
+/* ── Begin button ────────────────────────────────────────────── */
+/* Fixed bottom-center. Independent of the hero overlay.         */
+#begin-btn {
+  position:       fixed;
+  bottom:         clamp(40px, 7vh, 72px);
+  left:           50%;
+  transform:      translateX(-50%);
+  z-index:        10;
+
+  opacity:        0;          /* revealed by GSAP */
+  pointer-events: all;
+  display:        inline-flex;
+  align-items:    center;
+  gap:            14px;
+
+  background:     transparent;
+  border:         1px solid var(--color-line);
+  border-radius:  2px;
+  padding:        18px 40px;
+  cursor:         pointer;
+  color:          var(--color-text);
+  font-family:    'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:      20px;
+  letter-spacing: 0;
+  font-weight:    300;
+  white-space:    nowrap;
+
+  transition:
+    border-color 0.3s ease,
+    color        0.3s ease;
+}
+
+#begin-btn::after {
+  content:    '';
+  display:    inline-block;
+  width:      20px;
+  height:     1px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+
+#begin-btn:hover {
+  border-color: var(--color-warm);
+  color:        var(--color-warm);
+}
+
+#begin-btn:hover::after {
+  width: 30px;
+}
+
+/* ── Main navigation ─────────────────────────────────────────── */
+#main-nav {
+  position:       fixed;
+  top:            var(--edge);
+  right:          var(--edge);
+  z-index:        20;
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-end;
+  gap:            8px;
+  opacity:        0;
+  pointer-events: none;
+}
+
+#main-nav.is-visible {
+  opacity:        1;
+  pointer-events: all;
+}
+
+/* "Menu" toggle button */
+#menu-toggle {
+  background:     transparent;
+  border:         none;
+  cursor:         pointer;
+  font-family:    'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:      18px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight:    400;
+  color:          var(--color-text);
+  padding:        0;
+  line-height:    1;
+  transition:     color 0.25s ease;
+  display:        flex;
+  align-items:    center;
+  gap:            8px;
+  margin-left:    auto;
+}
+
+/* Animated dash indicator beside "Menu" */
+#menu-toggle::after {
+  content: none;
+}
+
+#menu-toggle:hover {
+  color: var(--color-warm);
+}
+
+/* Open state — dash becomes shorter */
+#menu-toggle[aria-expanded="true"] {
+  color: var(--color-warm);
+}
+
+#menu-toggle[aria-expanded="true"]::after {
+  width: 8px;
+}
+
+/* Dropdown items container */
+#menu-items {
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-end;
+  gap:            2px;
+  margin-top:     20px;
+  pointer-events: none;   /* controlled by GSAP */
+  overflow:       hidden;
+}
+
+#menu-items.is-open {
+  pointer-events: all;
+}
+
+/* Individual nav links — larger, editorial */
+.nav-link {
+  font-family:     var(--font-sans);
+  font-size:       clamp(22px, 3vw, 32px);
+  font-weight:     400;
+  letter-spacing:  0.01em;
+  color:           var(--color-text);
+  text-decoration: none;
+  line-height:     1.2;
+  opacity:         0;        /* GSAP controls visibility */
+  transform:       translateX(12px);
+  transition:      color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--color-warm);
+}
+
+/* ── Nav top row (sound + menu side by side) ─────────────────── */
+#nav-top-row {
+  display:     flex;
+  align-items: center;
+  gap:         16px;
+  justify-content: flex-end;
+}
+
+/* ── Sound toggle ────────────────────────────────────────────── */
+#sound-toggle {
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+  border:     none;
+  cursor:     pointer;
+  color:      var(--color-text);
+  padding:    0;
+  transition: color 0.25s ease;
+}
+
+#sound-toggle,
+#sound-toggle:hover,
+#sound-toggle:active,
+#sound-toggle:focus {
+  color: #ffffff;
+}
+
+#sound-toggle svg {
+  width:  36px;
+  height: 24px;
+}
+
+/* Traveling wave — CSS handles the seamless infinite loop */
+
+/* ── Customization panel ─────────────────────────────────────── */
+#custom-panel {
+  position:       fixed;
+  top:            50%;
+  transform:      translateY(-50%);
+  left:           var(--edge);
+  z-index:        20;
+  display:        flex;
+  flex-direction: column;
+  gap:            20px;
+  opacity:        0;
+  pointer-events: none;
+  transition:     opacity 0.4s ease;
+}
+
+/* All muted text inside the panel reads much lighter */
+#custom-panel .panel-section-label,
+#custom-panel .swatch-img-label,
+#custom-panel .shade-option,
+#custom-panel .slider-icon {
+  color:   #c8c0b8;
+  opacity: 1;
+}
+
+
+#custom-panel.is-visible {
+  opacity:        1;
+  pointer-events: all;
+}
+
+.panel-card {
+  background:    rgba(30, 18, 8, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  border:        1px solid rgba(200, 169, 110, 0.08);
+  padding:       20px 22px;
+  display:       flex;
+  flex-direction: column;
+  gap:           20px;
+}
+
+.panel-label {
+  font-family:    var(--font-sans);
+  font-size:      clamp(22px, 3.5vw, 42px);
+  font-weight:    300;
+  letter-spacing: 0;
+  text-transform: none;
+  color:          var(--color-text);
+  margin-bottom:  -4px;
+  line-height:    1.15;
+}
+
+.panel-section {
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+}
+
+.panel-section-label {
+  font-size:      11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color:          var(--color-text-muted);
+  opacity:        0.65;
+}
+
+/* ── Swatches (base row) ─────────────────────────────────────── */
+.swatch-row {
+  display: flex;
+  gap:     8px;
+}
+
+.swatch-row--images {
+  gap: 10px;
+  width: 100%;
+}
+
+/* Image-based base swatch */
+.swatch-img {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            6px;
+  background:     transparent;
+  border:         1px solid transparent;
+  border-radius:  3px;
+  padding:        3px;
+  cursor:         pointer;
+  outline:        none;
+  transition:     border-color 0.2s ease;
+}
+
+.swatch-img img {
+  width:         64px;
+  height:        110px;
+  object-fit:    contain;
+  object-position: center bottom;
+  border-radius: 2px;
+  display:       block;
+}
+
+.swatch-img-label {
+  font-family:    var(--font-sans);
+  font-size:      10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color:          var(--color-text-muted);
+  font-weight:    400;
+  margin-top:     4px;
+}
+
+.swatch-img:hover {
+  border-color: rgba(200, 169, 110, 0.4);
+}
+
+.swatch-img.active {
+  border-color: var(--color-warm);
+}
+
+.swatch-img.active .swatch-img-label {
+  color: var(--color-warm);
+}
+
+/* ── Screen toggle (shade) ───────────────────────────────────── */
+.screen-toggle {
+  display:    flex;
+  align-items: center;
+  gap:        10px;
+}
+
+.shade-option {
+  background:  transparent;
+  border:      none;
+  padding:     0;
+  cursor:      pointer;
+  outline:     none;
+  line-height: 0;
+}
+
+.shade-dot {
+  display:       block;
+  width:         28px;
+  height:        28px;
+  border-radius: 50%;
+  border:        2px solid transparent;
+  transition:    border-color 0.2s ease, transform 0.2s ease;
+}
+
+.shade-option.active .shade-dot {
+  border-color: rgba(200, 169, 110, 0.9);
+  transform:    scale(1.15);
+}
+
+.shade-option:hover:not(.active) .shade-dot {
+  border-color: rgba(200, 169, 110, 0.4);
+  transform:    scale(1.08);
+}
+
+/* ── Light slider ────────────────────────────────────────────── */
+.slider-row {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  width:       100%;
+}
+
+.slider-icon {
+  width:   14px;
+  height:  14px;
+  color:   var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+#light-slider {
+  -webkit-appearance: none;
+  appearance:         none;
+  flex:               1;
+  height:             1px;
+  background: linear-gradient(
+    to right,
+    var(--color-warm) 0%,
+    var(--color-warm) calc(var(--slider-pct, 60%) * 1%),
+    rgba(200, 169, 110, 0.2) calc(var(--slider-pct, 60%) * 1%)
+  );
+  outline: none;
+  cursor:  pointer;
+}
+
+#light-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width:        12px;
+  height:       12px;
+  border-radius: 50%;
+  background:   var(--color-warm);
+  border:       2px solid var(--color-bg);
+  cursor:       pointer;
+  transition:   transform 0.15s ease;
+}
+
+#light-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+#light-slider::-moz-range-thumb {
+  width:        12px;
+  height:       12px;
+  border-radius: 50%;
+  background:   var(--color-warm);
+  border:       2px solid var(--color-bg);
+  cursor:       pointer;
+}
+
+/* ── Scene transition veil ───────────────────────────────────── */
+/* Sits between the canvas and UI. Fades to black to mask the    */
+/* Three.js scene swap during the hero → product transition.     */
+#scene-veil {
+  position:       fixed;
+  inset:          0;
+  z-index:        8;
+  background:     #0f0d0b;
+  opacity:        0;
+  pointer-events: none;
+}
+
+/* ── Scroll layout ───────────────────────────────────────────── */
+/* Hero spacer: pushes content below the fixed hero overlay.     */
+#hero-spacer {
+  height:         100vh;
+  pointer-events: none;
+}
+
+/* Product scroll stage: its height (in vh) is the "timeline".   */
+/* Scroll through it drives the GLTF animation via ScrollTrigger. */
+/* Adjust --scroll-vh to change how much scroll = full animation. */
+#product-scroll-stage {
+  height:         700vh;   /* matches CONFIG.scroll.scrollVH */
+  pointer-events: none;
+}
+
+/* ── Scroll text overlays ────────────────────────────────────── */
+/* Container for all dynamically generated text blocks.          */
+/* Fixed so text floats over the canvas regardless of scroll.    */
+#scroll-text-layer {
+  position:       fixed;
+  inset:          0;
+  z-index:        15;
+  pointer-events: none;
+}
+
+/* Individual text block — injected by scroll.js from config.    */
+/* Edit position here to move where section text appears.        */
+.scroll-text-block {
+  position:  absolute;
+  bottom: clamp(200px, 35vh, 400px);
+  left:      var(--edge);
+  max-width: min(460px, 50vw);
+  opacity:   0;
+  transform: translateY(20px);   /* GSAP resets this */
+}
+
+.scroll-text-heading {
+  font-size:      clamp(22px, 3.5vw, 42px);
+  font-weight:    300;
+  letter-spacing: 0.03em;
+  color:          var(--color-text);
+  line-height:    1.15;
+  margin-bottom:  18px;
+}
+
+.scroll-text-line {
+  font-size:      clamp(12px, 1.3vw, 16px);
+  font-weight:    300;
+  letter-spacing: 0.06em;
+  color:          var(--color-text-muted);
+  line-height:    1.8;
+}
+
+/* ── Scene tooltips ──────────────────────────────────────────── */
+/* Fixed layer that holds all 3D-anchored tooltip elements.      */
+#scene-tooltip-layer {
+  position:       fixed;
+  inset:          0;
+  z-index:        18;
+  pointer-events: none;
+}
+
+/* Dot — anchored to 3D point */
+.scene-tooltip-dot-anchor {
+  position:   fixed;
+  width:      0;
+  height:     0;
+  opacity:    0;
+  transition: opacity 0.45s ease;
+}
+
+.scene-tooltip-dot-anchor::after {
+  content:       '';
+  display:       block;
+  width:         5px;
+  height:        5px;
+  border-radius: 50%;
+  background:    rgba(255, 244, 224, 0.7);
+  transform:     translate(-50%, -50%);
+}
+
+/* Label — positioned at dot + lineOffset */
+.scene-tooltip-label {
+  position:       fixed;
+  opacity:        0;
+  transition:     opacity 0.45s ease;
+  white-space:    nowrap;
+  font-family:    var(--font-sans);
+  font-size:      13px;
+  font-weight:    400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color:          rgba(255, 244, 224, 0.85);
+}
+
+/* ── Gallery section ─────────────────────────────────────────── */
+/* Pin container — GSAP ScrollTrigger pins this element.         */
+#scene-return {
+  display: none;
+}
+
+#transition-canvas {
+  position:       sticky;
+  top:            0;
+  width:          100%;
+  height:         100vh;
+  display:        block;
+  z-index:        6;
+  pointer-events: none;
+}
+
+#gallery-section {
+  position:   relative;
+  height:     100vh;
+  overflow:   hidden;
+  background: var(--color-bg);
+  z-index:    5;
+  /* Hidden until GSAP pin is set up (after phos:activate).
+     Prevents the section bleeding through the hero overlay. */
+  visibility: hidden;
+}
+
+#gallery-section.gallery-ready {
+  visibility: visible;
+}
+
+/* Horizontal track — GSAP translates this on X axis.            */
+#gallery-track {
+  position:        absolute;
+  top:             0;
+  left:            0;
+  height:          100%;
+  display:         flex;
+  align-items:     center;
+  gap:             40px;
+  padding:         0 clamp(40px, 6vw, 100px);
+  will-change:     transform;
+}
+
+/* Gallery intro text (first slide) */
+.gallery-intro {
+  flex-shrink: 0;
+  width:       clamp(240px, 30vw, 400px);
+  padding-right: clamp(40px, 5vw, 80px);
+  border-right: 1px solid var(--color-line);
+}
+
+.gallery-intro-heading {
+  font-size:      clamp(22px, 3.5vw, 42px);
+  font-weight:    300;
+  letter-spacing: 0.03em;
+  color:          var(--color-text);
+  margin-bottom:  18px;
+  line-height:    1.15;
+}
+
+.gallery-intro-line {
+  font-size:      clamp(12px, 1.2vw, 15px);
+  letter-spacing: 0.08em;
+  color:          var(--color-text-muted);
+  line-height:    2;
+  font-weight:    300;
+}
+
+/* Gallery image cards */
+.gallery-card {
+  flex-shrink: 0;
+  width:       clamp(260px, 38vw, 520px);
+  display:     flex;
+  flex-direction: column;
+  gap:         14px;
+}
+
+/* Placeholder image area — replace with <img> when photos are ready */
+.card-image {
+  width:         100%;
+  aspect-ratio:  3 / 4;
+  background:    hsl(
+    var(--card-hue, 32deg),
+    var(--card-sat, 18%),
+    var(--card-light, 14%)
+  );
+  border-radius: 2px;
+
+  /* Subtle warm gradient overlay */
+  background-image: radial-gradient(
+    ellipse at 30% 30%,
+    hsla(var(--card-hue, 32deg), 30%, 25%, 0.5) 0%,
+    transparent 70%
+  );
+  transition: transform 0.4s ease;
+}
+
+.gallery-card:hover .card-image {
+  transform: scale(1.015);
+}
+
+.card-label {
+  font-size:      10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color:          var(--color-text-muted);
+  font-weight:    400;
+}
+
+/* ── Loop card (last gallery carousel item) ─────────────────── */
+/* Lives inside #gallery-track. Inherits .gallery-card layout.   */
+.gallery-card--loop {
+  gap: 0;   /* no label below the image */
+}
+
+/* The image that scales up to fill the viewport. */
+.loop-card-image {
+  width:            100%;
+  aspect-ratio:     3 / 4;
+  border-radius:    2px;
+  display:          block;
+  object-fit:       cover;
+  object-position:  center;
+  transform-origin: center center;
+  will-change:      transform;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+#site-footer {
+  position:        relative;
+  z-index:         5;
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  padding:         clamp(32px, 5vh, 56px) var(--edge);
+  border-top:      1px solid var(--color-line);
+  background:      var(--color-bg);
+}
+
+.footer-brand {
+  font-size:      11px;
+  letter-spacing: 0.35em;
+  color:          var(--color-warm);
+  font-weight:    400;
+}
+
+.footer-copy {
+  font-size:      10px;
+  letter-spacing: 0.18em;
+  color:          var(--color-text-muted);
+  font-weight:    300;
+}
+
+/* ── Light debug panel ───────────────────────────────────────── */
+#light-debug {
+  position:       fixed;
+  top:            50%;
+  right:          var(--edge);
+  transform:      translateY(-50%);
+  z-index:        999;
+  background:     rgba(10, 8, 6, 0.88);
+  border:         1px solid rgba(200, 169, 110, 0.2);
+  border-radius:  4px;
+  padding:        16px 18px;
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+  backdrop-filter: blur(8px);
+  min-width:      200px;
+}
+
+.ldp-title {
+  font-size:      9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color:          var(--color-warm);
+  margin-bottom:  2px;
+}
+
+.ldp-row {
+  display:        flex;
+  align-items:    center;
+  justify-content: space-between;
+  gap:            10px;
+  font-size:      10px;
+  letter-spacing: 0.12em;
+  color:          var(--color-text-muted);
+  cursor:         default;
+}
+
+.ldp-row input[type=range] {
+  flex:           1;
+  height:         1px;
+  accent-color:   var(--color-warm);
+  cursor:         pointer;
+}
+
+.ldp-row span {
+  font-size:    10px;
+  color:        var(--color-text);
+  min-width:    28px;
+  text-align:   right;
+}
+
+/* ── Utility ─────────────────────────────────────────────────── */
+::selection {
+  background: rgba(200, 169, 110, 0.25);
+  color:      var(--color-text);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE  (≤ 768px) — desktop styles untouched above this line
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  :root {
+    --edge: 20px;
+  }
+
+  /* ── Nav — hide on mobile, replaced by menu button ── */
+  #main-nav .nav-links {
+    display: none;
+  }
+
+  /* ── Menu dropdown background on mobile ── */
+  #main-nav {
+    background:    rgba(20, 12, 6, 0);
+    border-radius: 12px;
+    padding:       10px 14px;
+    transition:    background 0.3s ease;
+  }
+
+  #main-nav.menu-open {
+    background: rgba(20, 12, 6, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* ── Mobile header veil — gradient behind nav for readability ── */
+  #mobile-header-veil {
+    position:   fixed;
+    top:        0;
+    left:       0;
+    right:      0;
+    height:     80px;
+    background: linear-gradient(to bottom, rgba(20,12,6,0.55) 0%, rgba(20,12,6,0) 100%);
+    z-index:    9;
+    pointer-events: none;
+    transform:  translateY(0);
+    transition: transform 0.5s ease, opacity 0.5s ease;
+    opacity:    1;
+  }
+
+  #mobile-header-veil.hidden {
+    transform: translateY(-100%);
+    opacity:   0;
+  }
+
+  /* ── Hero overlay ── */
+  #hero-overlay {
+    justify-content: center;
+    align-items:     center;
+  }
+
+  #hero-center {
+    gap: clamp(6px, 1.5vh, 12px);
+  }
+
+  .brand-name {
+    font-size:   clamp(40px, 12vw, 64px);
+  }
+
+  .hero-tagline {
+    font-size:   clamp(14px, 4vw, 20px);
+  }
+
+  #begin-btn {
+    font-size: 16px;
+    padding:   14px 32px;
+  }
+
+  /* ── Scroll text ── */
+  .scroll-text-block {
+    left:      var(--edge);
+    right:     var(--edge);
+    bottom:    clamp(80px, 14vh, 120px);
+    max-width: 100%;
+  }
+
+  .scroll-text-heading {
+    font-size: clamp(26px, 7vw, 40px);
+  }
+
+  .scroll-text-line {
+    font-size: clamp(12px, 3.5vw, 15px);
+  }
+
+  /* ── Custom panel — bottom of screen, full width card ── */
+  #custom-panel {
+    top:       auto;
+    bottom:    44px;
+    left:      var(--edge);
+    right:     var(--edge);
+    transform: none;
+    gap:       14px;
+  }
+
+  .panel-label {
+    font-size:   clamp(22px, 6vw, 34px);
+    font-weight: 500;
+  }
+
+  /* Grid layout: bases left, shade+light right */
+  .panel-card {
+    display:               grid;
+    grid-template-columns: 55% 1fr;
+    grid-template-rows:    auto auto;
+    padding:               14px 16px;
+    gap:                   0;
+  }
+
+  .panel-section:nth-child(1) {
+    grid-row:       1 / 3;
+    grid-column:    1;
+    border-right:   1px solid rgba(200,169,110,0.12);
+    padding-right:  14px;
+    gap:            8px;
+  }
+
+  .panel-section:nth-child(2) {
+    grid-row:        1;
+    grid-column:     2;
+    padding-left:    14px;
+    border-bottom:   1px solid rgba(200,169,110,0.12);
+    padding-bottom:  10px;
+    gap:             8px;
+  }
+
+  .panel-section:nth-child(3) {
+    grid-row:     2;
+    grid-column:  2;
+    padding-left: 14px;
+    padding-top:  10px;
+    gap:          8px;
+  }
+
+  /* Base images smaller */
+  .swatch-img img {
+    width:  48px;
+    height: 80px;
+  }
+
+  .swatch-row--images {
+    gap: 6px;
+  }
+
+  /* Shade — rectangles instead of circles */
+  .shade-dot {
+    width:         100%;
+    height:        26px;
+    border-radius: 4px;
+    transform:     none !important;
+  }
+
+  .shade-option {
+    flex: 1;
+  }
+
+  .screen-toggle {
+    gap: 6px;
+  }
+
+  /* ── Snap label ── */
+  #phos-snap-label {
+    font-size: 20px;
+    bottom:    auto;
+    top:       15vh;
+    transform: translateX(-50%);
+  }
+
+  /* ── Corner logo ── */
+  #corner-logo {
+    font-size: 18px;
+    gap:       7px;
+  }
+
+  .corner-logo-img {
+    height: 10px;
+  }
+
+  /* ── Credits ── */
+  #credit-studio,
+  #credit-filamento {
+    font-size:  13px;
+    bottom:     12px;
+  }
+
+  /* ── Scroll hint ── */
+  #scroll-hint {
+    font-size:   15px;
+    bottom:      auto;
+    top:         12vh;
+    background:  rgba(20, 12, 6, 0.45);
+    padding:     7px 18px;
+    border-radius: 8px;
+  }
+
+  /* ── Gallery ── */
+  .gallery-card {
+    width: clamp(200px, 70vw, 320px);
+  }
+
+  .gallery-intro-heading {
+    font-size: clamp(22px, 7vw, 36px);
+  }
+
+  .gallery-intro-line {
+    font-size: clamp(12px, 3.5vw, 16px);
+  }
+
+  /* ── Debug panel — hide on mobile ── */
+  #light-debug {
+    display: none !important;
+  }
+
+  /* ── Frame debug ── */
+  #phos-frame-debug {
+    font-size: 11px;
+  }
+}
