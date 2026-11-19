@@ -368,16 +368,24 @@ export async function warmUpScene() {
     })
   })
 
-  try {
-    await renderer.compileAsync(_scene, _camera)
-  } catch {
-    renderer.compile(_scene, _camera)
+  // Every light phase needs its own programs — build them all now
+  for (const frame of LIGHT_PHASE_FRAMES) {
+    _setLightPhase(frame)
+    try {
+      await renderer.compileAsync(_scene, _camera)
+    } catch {
+      renderer.compile(_scene, _camera)
+    }
+    _drawAllOnce(renderer)
   }
+  _setLightPhase(0)
+}
 
-  // Draw one frame with every mesh shown and un-culled, so geometry buffers
-  // and shadow-pass programs exist too (slide-in props start off-screen and
-  // would otherwise upload on "Begin"). The opaque loader hides this frame.
-  // Lights are left alone: changing their count would build wrong programs.
+// Draw one frame with every mesh shown and un-culled, so geometry buffers
+// and shadow-pass programs exist too (slide-in props start off-screen and
+// would otherwise upload on "Begin"). The opaque loader hides this frame.
+// Lights are left alone: the caller sets which light phase is active.
+function _drawAllOnce(renderer) {
   const saved = []
   _scene.traverse((obj) => {
     if (obj.isLight) return
@@ -483,7 +491,24 @@ let _propsHidden = false
 const SHADE_BOUNCE_HIDE_FRAME = 20
 let _shadeBounceVisible = true
 
+// ── Light phases ─────────────────────────────────────────────
+// shade_bounce, luz_abajo and luz_chapita sit at intensity 0 for large
+// parts of the scroll. A visible light costs per-pixel shading even at 0,
+// so each one is hidden while it's off. Changing the visible light count
+// needs a different shader program — warmUpScene() pre-compiles all three
+// phases, so switching reuses cached programs instead of freezing.
+const LIGHT_PHASE_FRAMES = [0, SHADE_BOUNCE_HIDE_FRAME, LUZ_CHAPITA_FRAME]
+
+function _setLightPhase(frame) {
+  const sb = _glbLights.find(({ light }) => light.name === 'shade_bounce')?.light
+  if (sb) sb.visible = frame < SHADE_BOUNCE_HIDE_FRAME
+  if (_nodeMap['luz_abajo'])   _nodeMap['luz_abajo'].visible   = frame >= LUZ_ABAJO_FRAME
+  if (_nodeMap['luz_chapita']) _nodeMap['luz_chapita'].visible = frame >= LUZ_CHAPITA_FRAME
+}
+
 export function updateBaseVisibility(frame) {
+  _setLightPhase(frame)
+
   // ── trunk glow: fades out frames 7→16, back in 16→7 ─────────────
   const GLOW_FADE_START = 7
   const GLOW_FADE_END   = 16
@@ -532,8 +557,7 @@ export function updateBaseVisibility(frame) {
   const chapitaOn = frame >= LUZ_CHAPITA_FRAME
   if (chapitaOn !== _luzChapitaOn) {
     _luzChapitaOn = chapitaOn
-    const lc = _nodeMap['luz_chapita']
-    if (lc) lc.intensity = chapitaOn ? lc.userData._onIntensity : 0
+    // visibility handled by _setLightPhase()
   }
 
   // ── Chapita swap at frame 160 ─────────────────────────────────
@@ -573,6 +597,9 @@ export function setEnvironmentOpacity(value) {
   const v = Math.max(0, Math.min(1, value))
   _envMeshes.forEach((mesh) => {
     mesh.material.opacity = v
+    // Fully faded meshes (the full-screen wall included) still cost a lit,
+    // transparent draw every frame — skip them once they're invisible.
+    mesh.visible = v > 0
   })
 }
 
@@ -683,15 +710,8 @@ function _applyInitialVisibility() {
     if (_nodeMap[name]) _nodeMap[name].visible = false
   })
 
-  // luz_chapita — off until LUZ_CHAPITA_FRAME.
-  // Toggled via intensity, never .visible: changing the number of visible
-  // lights forces three.js to recompile every material (a ~500ms freeze).
-  const lc = _nodeMap['luz_chapita']
-  if (lc) {
-    lc.userData._onIntensity ??= lc.intensity
-    lc.visible   = true
-    lc.intensity = 0
-  }
+  // Lights that are off at frame 0 start hidden (see _setLightPhase)
+  _setLightPhase(0)
 }
 
 function _setupSceneListeners() {
