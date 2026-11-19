@@ -23,6 +23,7 @@ import { setAnimationTime, getAnimationDuration, setEnvironmentOpacity, setBulbI
 import { setBackgroundOpacity } from './background.js'
 import { setTooltipFrame } from './tooltips.js'
 import { initTransition, transitionIn, transitionOut } from './transition.js'
+import { setRenderPaused } from './scene.js'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin)
 
@@ -404,6 +405,9 @@ function _setupGallery() {
         scrub:         0.4,
         anticipatePin: 1,
 
+        // Gallery is opaque and covers the viewport while pinned —
+        // stop drawing the 3D scene behind it.
+        onToggle(self) { setRenderPaused(self.isActive) },
 
         onUpdate(self) {
           const bgOpacity = Math.max(0, 1 - self.progress * 2)
@@ -447,6 +451,7 @@ function _doLoopReset(track) {
     if (textLayer) textLayer.style.opacity = '1'
     gsap.set(track, { x: 0 })
     window.scrollTo({ top: 0, behavior: 'instant' })
+    setRenderPaused(false)
 
     // Two frames for layout to settle, then reveal
     requestAnimationFrame(() => requestAnimationFrame(() => {

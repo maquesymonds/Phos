@@ -22,6 +22,7 @@ let _scene         = null     // set via setThreeScene()
 let _composer      = null     // set via setComposer() — used instead of renderer.render()
 let _rafId         = null
 let _tickListeners = []       // per-frame callbacks registered via onTick()
+let _renderPaused  = false    // true while an opaque section fully covers the canvas
 
 /**
  * Initialize the WebGL renderer attached to the given canvas.
@@ -34,7 +35,6 @@ export function initRenderer(canvas) {
     canvas,
     antialias:             cfg.antialias,
     alpha:                 cfg.alpha,
-    preserveDrawingBuffer: true,   // needed for canvas.toDataURL() capture
   })
 
   _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -81,6 +81,15 @@ export function onTick(fn) {
 }
 
 /**
+ * Skip drawing (ticks keep running) while the canvas is fully hidden,
+ * e.g. while the opaque gallery section is pinned over it.
+ * @param {boolean} paused
+ */
+export function setRenderPaused(paused) {
+  _renderPaused = paused
+}
+
+/**
  * Start the render loop.
  */
 export function startLoop() {
@@ -91,6 +100,7 @@ export function startLoop() {
     const elapsed = clock.getElapsedTime()
 
     _tickListeners.forEach(fn => fn(elapsed))
+    if (_renderPaused) return
     if (_composer) {
       _composer.render()
     } else if (_renderer && _scene && _camera) {
@@ -113,16 +123,6 @@ export function stopLoop() {
  */
 export function getRenderer() {
   return _renderer
-}
-
-/**
- * Capture the current canvas frame as a JPEG data URL.
- * Requires preserveDrawingBuffer: true on the renderer.
- * Returns null if renderer isn't ready.
- */
-export function captureFrame(quality = 0.92) {
-  if (!_renderer) return null
-  return _renderer.domElement.toDataURL('image/jpeg', quality)
 }
 
 // ─── Private ─────────────────────────────────────────────────
