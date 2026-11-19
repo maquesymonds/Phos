@@ -51,7 +51,6 @@ export function initTooltips(_animDuration) {
   })
 
   onTick(_tick)
-  console.log(`[PHOS tooltips] ${_tips.length} tooltip(s) registered.`)
 }
 
 export function setTooltipFrame(frame) {
@@ -68,8 +67,7 @@ function _tick() {
   if (!_debugLogged) {
     _debugLogged = true
     _tips.forEach(({ cfg, node }) => {
-      if (node) console.log(`[PHOS tooltips] ✓ "${cfg.node}" → "${cfg.id}" ready.`)
-      else       console.warn(`[PHOS tooltips] ⚠ "${cfg.node}" not found.`)
+      if (!node) console.warn(`[PHOS tooltips] ⚠ "${cfg.node}" not found.`)
     })
   }
 

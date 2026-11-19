@@ -270,7 +270,6 @@ export function initBackground(scene) {
     if (_material) _material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight)
   })
 
-  console.log('[PHOS background] v4 — 9-param volumetric atmosphere.')
 }
 
 export function getBackgroundUniforms() {

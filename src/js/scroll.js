@@ -72,7 +72,6 @@ function _setup() {
   _setupMobileHeaderVeil()
   _setupGallery()
   _setupReturnTransition()
-  console.log('[PHOS scroll] ScrollTrigger ready. Duration:', getAnimationDuration().toFixed(3) + 's')
 }
 
 // ── Main animation scrubber ───────────────────────────────────
@@ -130,32 +129,7 @@ function _hideSnapLabel() {
   gsap.to(_snapLabelEl, { opacity: 0, duration: 0.25, ease: 'power2.in' })
 }
 
-// ── Debug frame overlay ───────────────────────────────────────
-// Shows current frame in the top-right corner while scrolling.
-// Remove this function and its call when no longer needed.
-
-function _initFrameDebug() {
-  const el = document.createElement('div')
-  el.id = 'phos-frame-debug'
-  Object.assign(el.style, {
-    position:   'fixed',
-    bottom:     '16px',
-    left:       '16px',
-    zIndex:     '9999',
-    fontFamily: 'monospace',
-    fontSize:   '13px',
-    color:      '#fff',
-    background: 'rgba(0,0,0,0.55)',
-    padding:    '4px 10px',
-    borderRadius: '4px',
-    pointerEvents: 'none',
-  })
-  document.body.appendChild(el)
-  return el
-}
-
 function _setupMainScrubber() {
-  const debugEl      = { textContent: '' } // _initFrameDebug() — disabled
   _snapLabelEl       = _initSnapLabel()
   const snaps        = CONFIG.baseSnaps ?? []
   const { totalFrames }  = CONFIG.scroll
@@ -232,8 +206,6 @@ function _setupMainScrubber() {
       const t = Math.min(progress / FADE_END, 1)
       setEnvironmentOpacity(1 - t)
 
-      // Debug overlay
-      debugEl.textContent = `frame: ${Math.round(currentFrame)}`
 
 
       // Base swap at frame 192
