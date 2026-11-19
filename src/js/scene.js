@@ -38,7 +38,9 @@ export function initRenderer(canvas) {
   })
 
   _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  _renderer.setSize(window.innerWidth, window.innerHeight)
+  // updateStyle=false: CSS keeps the canvas at 100% of the viewport, so it
+  // can never end up shorter than the window (the old inline px size could)
+  _renderer.setSize(window.innerWidth, window.innerHeight, false)
   _renderer.toneMapping         = toneMappingMap[cfg.toneMapping] ?? THREE.ACESFilmicToneMapping
   _renderer.toneMappingExposure = cfg.toneMappingExposure
   _renderer.shadowMap.enabled   = cfg.shadowMapEnabled
@@ -61,6 +63,7 @@ export function setThreeScene(threeScene) {
  */
 export function setCamera(camera) {
   _camera = camera
+  _onResize()   // sync to the current window — it may have changed while loading
 }
 
 /**
@@ -128,15 +131,17 @@ export function getRenderer() {
 // ─── Private ─────────────────────────────────────────────────
 
 function _onResize() {
-  if (!_renderer || !_camera) return
+  if (!_renderer) return
 
   const w = window.innerWidth
   const h = window.innerHeight
 
-  _renderer.setSize(w, h)
+  // Resize even before the camera exists — a resize during loading used to
+  // be dropped, leaving the canvas shorter than the window (dark strip)
+  _renderer.setSize(w, h, false)
   if (_composer) _composer.setSize(w, h)
 
-  if (_camera.isPerspectiveCamera) {
+  if (_camera?.isPerspectiveCamera) {
     _camera.aspect = w / h
     _camera.updateProjectionMatrix()
   }

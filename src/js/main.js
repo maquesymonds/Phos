@@ -12,6 +12,7 @@
 //    7.  Hide loader, reveal hero overlay
 //    8.  Init scroll system (waits internally for phos:activate)
 //    9.  Signal phos:productReady so scroll can wire up
+//    10. Load gallery photos (deferred so they don't slow the GLB)
 // ─────────────────────────────────────────────────────────────
 
 import { initRenderer, startLoop }                   from './scene.js'
@@ -69,6 +70,12 @@ async function boot() {
 
   // ── 9. Model is ready — scroll can wire up once user activates
   window.dispatchEvent(new CustomEvent('phos:productReady'))
+
+  // ── 10. Gallery photos load only now — at page load they competed
+  //        with the GLB for bandwidth, and they're seen last anyway
+  document.querySelectorAll('[data-bg]').forEach((el) => {
+    el.style.backgroundImage = `url('${el.dataset.bg}')`
+  })
 }
 
 boot()

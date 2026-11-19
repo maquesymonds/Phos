@@ -15,6 +15,8 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/png" href="/images/Favicon.png" />
+  <!-- Start the 3D model download immediately, before the JS bundle runs -->
+  <link rel="preload" href="/models/Phos_Scroll.glb" as="fetch" crossorigin />
   <link rel="stylesheet" href="/src/styles/style.css" />
 </head>
 <body>
@@ -197,27 +199,27 @@
       <!-- Replace the inner <div class="card-image"> with <img> tags   -->
       <!-- when photography is ready.                                   -->
       <article class="gallery-card" data-room="bedroom">
-        <div class="card-image" style="background-image: url('/images/bedroom.jpg'); background-size: cover; background-position: center;"></div>
+        <div class="card-image" data-bg="/images/bedroom.jpg" style="background-size: cover; background-position: center;"></div>
         <p class="card-label">Bedroom</p>
       </article>
 
       <article class="gallery-card" data-room="living-room">
-        <div class="card-image" style="background-image: url('/images/living.jpg'); background-size: cover; background-position: center;"></div>
+        <div class="card-image" data-bg="/images/living.jpg" style="background-size: cover; background-position: center;"></div>
         <p class="card-label">Living Room</p>
       </article>
 
       <article class="gallery-card" data-room="library">
-        <div class="card-image" style="background-image: url('/images/library.jpg'); background-size: cover; background-position: center;"></div>
+        <div class="card-image" data-bg="/images/library.jpg" style="background-size: cover; background-position: center;"></div>
         <p class="card-label">Library</p>
       </article>
 
       <article class="gallery-card" data-room="hallway">
-        <div class="card-image" style="background-image: url('/images/hallway.jpg'); background-size: cover; background-position: center;"></div>
+        <div class="card-image" data-bg="/images/hallway.jpg" style="background-size: cover; background-position: center;"></div>
         <p class="card-label">Hallway</p>
       </article>
 
       <article class="gallery-card" data-room="study">
-        <div class="card-image" style="background-image: url('/images/study.jpg'); background-size: cover; background-position: center;"></div>
+        <div class="card-image" data-bg="/images/study.jpg" style="background-size: cover; background-position: center;"></div>
         <p class="card-label">Study</p>
       </article>
 
