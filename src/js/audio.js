@@ -15,11 +15,11 @@ const _mobile = () => window.innerWidth <= 768
 
 // ── Desktop state (Web Audio API) ────────────────────────────
 let _ctx        = null
-let _source     = null
 let _gain       = null
-let _buffer     = null
+let _loopEl     = null   // <audio> streamed through Web Audio — no full decode
 let _snapBuffer = null
 let _started    = false
+let _unlocked   = false
 
 // ── Mobile state (HTML5 audio) ────────────────────────────────
 let _audioEl    = null
@@ -33,6 +33,20 @@ let _muted      = false
 export function initAudio() {
   window.addEventListener('phos:activate',    _onActivate,    { once: true })
   window.addEventListener('phos:soundToggle', _onSoundToggle)
+
+  // Desktop: create the AudioContext now (it starts suspended). Creating it
+  // initialises the audio device (~250ms) — doing that inside the "Begin"
+  // click froze the page; unlockAudio() now only resumes it.
+  if (!_mobile()) {
+    try { _createContext() } catch (err) { console.warn('[PHOS audio] context init failed:', err) }
+  }
+}
+
+function _createContext() {
+  _ctx  = new AudioContext()
+  _gain = _ctx.createGain()
+  _gain.gain.setValueAtTime(0, _ctx.currentTime)
+  _gain.connect(_ctx.destination)
 }
 
 export function unlockAudio() {
@@ -47,12 +61,10 @@ export function unlockAudio() {
       .catch(err => console.warn('[PHOS audio] mobile autoplay failed:', err))
     return
   }
-  if (_ctx) return
+  if (_unlocked) return
+  _unlocked = true
   try {
-    _ctx  = new AudioContext()
-    _gain = _ctx.createGain()
-    _gain.gain.setValueAtTime(0, _ctx.currentTime)
-    _gain.connect(_ctx.destination)
+    if (!_ctx) _createContext()
     _ctx.resume().catch(() => {})
     // Play a silent 1-sample buffer to fully activate the context on iOS
     const buf = _ctx.createBuffer(1, 1, 22050)
@@ -100,20 +112,17 @@ async function _onActivate() {
   if (_mobile()) return   // mobile audio starts on sound-button tap, not here
 
   try {
-    if (!_ctx) {
-      _ctx  = new AudioContext()
-      _gain = _ctx.createGain()
-      _gain.gain.setValueAtTime(0, _ctx.currentTime)
-      _gain.connect(_ctx.destination)
-    }
+    if (!_ctx) _createContext()
     await _ctx.resume()
 
-    const [loopBuf, snapBuf] = await Promise.all([
-      fetch(AUDIO_SRC).then(r => r.arrayBuffer()).then(b => _ctx.decodeAudioData(b)),
-      fetch(SNAP_SRC).then(r  => r.arrayBuffer()).then(b => _ctx.decodeAudioData(b)),
-    ])
-    _buffer     = loopBuf
-    _snapBuffer = snapBuf
+    // The ambient loop is long (~3.5 min): decoding it whole would build
+    // ~76 MB of PCM right as scroll unlocks. Stream it instead, routed
+    // through the same gain node so fades and mute work as before.
+    _loopEl      = new Audio(AUDIO_SRC)
+    _loopEl.loop = true
+    _ctx.createMediaElementSource(_loopEl).connect(_gain)
+
+    _snapBuffer = await fetch(SNAP_SRC).then(r => r.arrayBuffer()).then(b => _ctx.decodeAudioData(b))
     _play()
   } catch (err) {
     console.warn('[PHOS audio] Failed to load audio:', err)
@@ -121,13 +130,9 @@ async function _onActivate() {
 }
 
 function _play() {
-  if (_started || !_buffer || !_ctx) return
+  if (_started || !_loopEl || !_ctx) return
   _started = true
-  _source        = _ctx.createBufferSource()
-  _source.buffer = _buffer
-  _source.loop   = true
-  _source.connect(_gain)
-  _source.start(0)
+  _loopEl.play().catch(err => console.warn('[PHOS audio] loop play failed:', err))
   if (!_muted) {
     _gain.gain.cancelScheduledValues(_ctx.currentTime)
     _gain.gain.setValueAtTime(0, _ctx.currentTime)

@@ -7,6 +7,7 @@
 //    3.  Load single GLTF (with progress bar)
 //    4.  Build scene — parked at frame 0
 //    5.  Activate scene (hands scene+camera to renderer)
+//    5b. Warm up: pre-compile all materials (incl. hidden meshes)
 //    6.  Start render loop
 //    7.  Hide loader, reveal hero overlay
 //    8.  Init scroll system (waits internally for phos:activate)
@@ -16,7 +17,7 @@
 import { initRenderer, startLoop }                   from './scene.js'
 import { initUI, setLoadProgress, hideLoader, revealHero } from './ui.js'
 import { loadGLB }                                   from './loaders.js'
-import { initProductScene, activateProductScene }    from './productScene.js'
+import { initProductScene, activateProductScene, warmUpScene } from './productScene.js'
 import { initScroll }                                from './scroll.js'
 import { initAudio }                                 from './audio.js'
 import { CONFIG }                                    from './config.js'
@@ -50,6 +51,9 @@ async function boot() {
 
   // ── 5. Hand scene + camera to renderer ───────────────────────
   activateProductScene()
+
+  // ── 5b. Pre-compile shaders + upload textures behind the loader
+  await warmUpScene()
 
   // ── 6. Render loop ───────────────────────────────────────────
   startLoop()

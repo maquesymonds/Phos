@@ -350,6 +350,48 @@ export function initProductScene(glb) {
  * Also sets up the EffectComposer with bloom.
  * Call once after initProductScene().
  */
+/**
+ * Pre-compile every material and upload every texture — including meshes
+ * that start hidden (alt bases, shade_02, chapitas) — while the loader is
+ * still up. Otherwise each one compiles the first time it appears, which
+ * freezes the page mid-scroll or on a swatch click.
+ * Call after activateProductScene(), before hiding the loader.
+ */
+export async function warmUpScene() {
+  const renderer = getRenderer()
+  if (!renderer || !_scene || !_camera) return
+
+  _scene.traverse((obj) => {
+    if (!obj.material) return
+    ;[].concat(obj.material).forEach((mat) => {
+      Object.values(mat).forEach((v) => { if (v && v.isTexture) renderer.initTexture(v) })
+    })
+  })
+
+  try {
+    await renderer.compileAsync(_scene, _camera)
+  } catch {
+    renderer.compile(_scene, _camera)
+  }
+
+  // Draw one frame with every mesh shown and un-culled, so geometry buffers
+  // and shadow-pass programs exist too (slide-in props start off-screen and
+  // would otherwise upload on "Begin"). The opaque loader hides this frame.
+  // Lights are left alone: changing their count would build wrong programs.
+  const saved = []
+  _scene.traverse((obj) => {
+    if (obj.isLight) return
+    saved.push([obj, obj.visible, obj.frustumCulled])
+    obj.visible       = true
+    obj.frustumCulled = false
+  })
+  renderer.render(_scene, _camera)
+  saved.forEach(([obj, visible, culled]) => {
+    obj.visible       = visible
+    obj.frustumCulled = culled
+  })
+}
+
 export function activateProductScene() {
   setThreeScene(_scene)
   if (_camera) setCamera(_camera)
@@ -491,7 +533,7 @@ export function updateBaseVisibility(frame) {
   if (chapitaOn !== _luzChapitaOn) {
     _luzChapitaOn = chapitaOn
     const lc = _nodeMap['luz_chapita']
-    if (lc) lc.visible = chapitaOn
+    if (lc) lc.intensity = chapitaOn ? lc.userData._onIntensity : 0
   }
 
   // ── Chapita swap at frame 160 ─────────────────────────────────
@@ -641,8 +683,15 @@ function _applyInitialVisibility() {
     if (_nodeMap[name]) _nodeMap[name].visible = false
   })
 
-  // luz_chapita — hidden until frame 250
-  if (_nodeMap['luz_chapita']) _nodeMap['luz_chapita'].visible = false
+  // luz_chapita — off until LUZ_CHAPITA_FRAME.
+  // Toggled via intensity, never .visible: changing the number of visible
+  // lights forces three.js to recompile every material (a ~500ms freeze).
+  const lc = _nodeMap['luz_chapita']
+  if (lc) {
+    lc.userData._onIntensity ??= lc.intensity
+    lc.visible   = true
+    lc.intensity = 0
+  }
 }
 
 function _setupSceneListeners() {
