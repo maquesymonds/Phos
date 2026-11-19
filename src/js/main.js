@@ -13,7 +13,6 @@
 //    9.  Signal phos:productReady so scroll can wire up
 // ─────────────────────────────────────────────────────────────
 
-import './theatreSetup.js'
 import { initRenderer, startLoop }                   from './scene.js'
 import { initUI, setLoadProgress, hideLoader, revealHero } from './ui.js'
 import { loadGLB }                                   from './loaders.js'

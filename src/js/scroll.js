@@ -22,6 +22,7 @@ import { playSnap } from './audio.js'
 import { setAnimationTime, getAnimationDuration, setEnvironmentOpacity, setBulbIntensity, updateBaseVisibility } from './productScene.js'
 import { setBackgroundOpacity } from './background.js'
 import { setTooltipFrame } from './tooltips.js'
+import { initTransition, transitionIn, transitionOut } from './transition.js'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin)
 
@@ -36,6 +37,8 @@ let _activated    = false
  * "Begin experience" before wiring any ScrollTrigger.
  */
 export function initScroll() {
+  initTransition()
+
   window.addEventListener('phos:productReady', () => {
     _productReady = true
     _trySetup()
@@ -158,17 +161,11 @@ function _setupMainScrubber() {
   const { rampFrameStart, rampFrameEnd } = CONFIG.bulbLight
 
   // ── Snap on scroll stop ──────────────────────────────────────
-  // Direction-aware: only snaps if you're scrolling toward the snap
-  // point, so scrolling backward never gets caught by a forward snap.
+  // When scroll is idle for 150ms, find the nearest snap within
+  // its radius and animate to it — no direction gate.
   let _snapIdleTimer = null
-  let _lastScrollY   = window.scrollY
-  let _scrollDir     = 0   // +1 = forward, -1 = backward
 
   window.addEventListener('scroll', () => {
-    const currentY = window.scrollY
-    _scrollDir = currentY >= _lastScrollY ? 1 : -1
-    _lastScrollY = currentY
-
     clearTimeout(_snapIdleTimer)
     _snapIdleTimer = setTimeout(() => {
       const st = ScrollTrigger.getById('main-scrubber')
@@ -176,36 +173,40 @@ function _setupMainScrubber() {
 
       const currentFrame = st.progress * totalFrames
 
+      // Find the closest snap point within its radius
+      let closest     = null
+      let closestDist = Infinity
       for (const snap of snaps) {
-        if (Math.abs(currentFrame - snap.frame) <= snap.radius) {
-          if (_activeSnap === snap) break
-
-          // Only snap if moving toward this point
-          const goingToward = _scrollDir >= 0
-            ? currentFrame <= snap.frame   // forward: haven't passed it yet
-            : currentFrame >= snap.frame   // backward: haven't gone below it yet
-          if (!goingToward) break
-
-          const targetProgress = snap.frame / totalFrames
-          const targetScroll   = st.start + targetProgress * (st.end - st.start)
-
-          _activeSnap = snap
-          playSnap()
-
-          gsap.to(window, {
-            scrollTo:  targetScroll,
-            duration:  0.6,
-            ease:      'power3.out',
-            onStart()    { _showSnapLabel(snap.label) },
-            onComplete() { _showSnapLabel(snap.label) },
-          })
-          break
-        } else if (_activeSnap === snap) {
-          _activeSnap = null
-          _hideSnapLabel()
+        const dist = Math.abs(currentFrame - snap.frame)
+        if (dist <= snap.radius && dist < closestDist) {
+          closest     = snap
+          closestDist = dist
         }
       }
-    }, 120)
+
+      // Clear label if we've moved outside all snap zones
+      if (!closest && _activeSnap) {
+        _activeSnap = null
+        _hideSnapLabel()
+        return
+      }
+
+      if (!closest || _activeSnap === closest) return
+
+      const targetProgress = closest.frame / totalFrames
+      const targetScroll   = st.start + targetProgress * (st.end - st.start)
+
+      _activeSnap = closest
+      playSnap()
+
+      gsap.to(window, {
+        scrollTo:  targetScroll,
+        duration:  0.6,
+        ease:      'power3.out',
+        onStart()    { _showSnapLabel(closest.label) },
+        onComplete() { _showSnapLabel(closest.label) },
+      })
+    }, 150)
   }, { passive: true })
 
   ScrollTrigger.create({
@@ -400,8 +401,9 @@ function _setupGallery() {
         start:         'top top',
         end:           `+=${travel}`,
         pin:           true,
-        scrub:         1,
+        scrub:         0.4,
         anticipatePin: 1,
+
 
         onUpdate(self) {
           const bgOpacity = Math.max(0, 1 - self.progress * 2)
@@ -410,7 +412,7 @@ function _setupGallery() {
           if (textLayer) textLayer.style.opacity = bgOpacity
 
           // Trigger loop while still pinned — before pin can release
-          if (self.progress >= 0.995 && !_isLooping) {
+          if (self.progress >= 0.97 && !_isLooping) {
             _isLooping = true
 
             // Freeze track at its final position
@@ -432,45 +434,29 @@ function _setupGallery() {
 }
 
 function _doLoopReset(track) {
-  const veil      = document.getElementById('scene-veil')
   const textLayer = document.getElementById('scroll-text-layer')
 
-  // Phase 1: fade to black while gallery is still pinned and frozen
-  gsap.to(veil, {
-    opacity:  1,
-    duration: 0.8,
-    ease:     'power2.inOut',
-    onComplete() {
-      // Phase 2: reset all state while screen is black
-      setAnimationTime(0)
-      setEnvironmentOpacity(1)
-      setBackgroundOpacity(1)
-      setTooltipFrame(0)
-      updateBaseVisibility(0)
-      if (textLayer) textLayer.style.opacity = '1'
+  // Phase 1: shader transition covers screen
+  transitionIn(() => {
+    // Phase 2: reset all state while screen is covered
+    setAnimationTime(0)
+    setEnvironmentOpacity(1)
+    setBackgroundOpacity(1)
+    setTooltipFrame(0)
+    updateBaseVisibility(0)
+    if (textLayer) textLayer.style.opacity = '1'
+    gsap.set(track, { x: 0 })
+    window.scrollTo({ top: 0, behavior: 'instant' })
 
-      // Reset gallery track
-      gsap.set(track, { x: 0 })
+    // Two frames for layout to settle, then reveal
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow            = ''
+      ScrollTrigger.refresh()
 
-      // Jump to top instantly — veil covers everything
-      window.scrollTo({ top: 0, behavior: 'instant' })
-
-      // Two frames for layout to settle
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        // Restore scrolling
-        document.documentElement.style.overflow = ''
-        document.body.style.overflow            = ''
-        ScrollTrigger.refresh()
-
-        // Phase 3: fade back in
-        gsap.to(veil, {
-          opacity:  0,
-          duration: 0.8,
-          ease:     'power2.inOut',
-          onComplete() { _isLooping = false },
-        })
-      }))
-    },
+      // Phase 3: shader transition reveals scene
+      transitionOut(() => { _isLooping = false })
+    }))
   })
 }
 

@@ -119,9 +119,9 @@ export const CONFIG = {
   // locks to that exact frame and shows a label with the base name.
   // radius: ← tweak to make the magnetic zone wider or narrower.
   baseSnaps: [
-    { frame: 215, label: 'Phōs Helios', radius: 14 },
-    { frame: 241, label: 'Phōs Eos',    radius: 14 },
-    { frame: 270, label: 'Phōs Apolo',  radius: 14 },
+    { frame: 215, label: 'Helios', radius: 14 },
+    { frame: 241, label: 'Eos',    radius: 14 },
+    { frame: 270, label: 'Apolo',  radius: 14 },
   ],
 
   // ── Scroll animation ─────────────────────────────────────────

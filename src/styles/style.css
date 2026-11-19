@@ -240,10 +240,12 @@ body {
 }
 
 .corner-logo-img {
-  height:     12px;
-  width:      auto;
-  object-fit: contain;
-  display:    block;
+  height:      14px;
+  width:       auto;
+  object-fit:  contain;
+  display:     block;
+  align-self:  center;
+  filter:      brightness(0) invert(1) sepia(1) saturate(0.15) brightness(0.96);
 }
 
 #credit-studio,
@@ -379,6 +381,30 @@ body {
 #menu-toggle:hover {
   color: var(--color-warm);
 }
+
+/* ── Nav buy link ────────────────────────────────────────────── */
+#nav-buy {
+  font-family:    'Aeonik', 'Helvetica Neue', sans-serif;
+  font-size:      18px;
+  font-weight:    400;
+  color:          var(--color-text);
+  text-decoration: none;
+  line-height:    1;
+  position:       relative;
+  transition:     color 0.25s ease;
+  opacity:        0;
+  pointer-events: none;
+}
+
+#main-nav.is-visible #nav-buy {
+  opacity:        1;
+  pointer-events: all;
+}
+
+#nav-buy:hover {
+  color: var(--color-warm);
+}
+
 
 /* Open state — dash becomes shorter */
 #menu-toggle[aria-expanded="true"] {
@@ -888,6 +914,30 @@ body {
   font-weight:    400;
 }
 
+/* ── Gallery intro CTA ───────────────────────────────────────── */
+.gallery-cta {
+  display:          inline-flex;
+  align-items:      center;
+  margin-top:       32px;
+  padding:          14px 28px;
+  border:           1px solid var(--color-text);
+  border-radius:    2px;
+  background:       var(--color-text);
+  font-family:      var(--font-sans);
+  font-size:        13px;
+  font-weight:      700;
+  letter-spacing:   0.06em;
+  text-transform:   uppercase;
+  color:            var(--color-bg);
+  text-decoration:  none;
+  transition:       background 0.35s ease, color 0.35s ease;
+}
+
+.gallery-cta:hover {
+  background: transparent;
+  color:      var(--color-text);
+}
+
 /* ── Loop card (last gallery carousel item) ─────────────────── */
 /* Lives inside #gallery-track. Inherits .gallery-card layout.   */
 .gallery-card--loop {
@@ -1069,7 +1119,9 @@ body {
   }
 
   .scroll-text-heading {
-    font-size: clamp(26px, 7vw, 40px);
+    font-size:     clamp(22px, 6vw, 30px);
+    font-weight:   400;
+    margin-bottom: 8px;
   }
 
   .scroll-text-line {
@@ -1132,6 +1184,17 @@ body {
     padding-top:  8px;
     gap:          6px;
     min-width:    0;
+    overflow:     hidden;
+  }
+
+  .panel-section:nth-child(3) .slider-row {
+    width:    100%;
+    overflow: hidden;
+  }
+
+  .panel-section:nth-child(3) #light-slider {
+    min-width: 0;
+    width:     0;
   }
 
   /* Base images smaller — distribute evenly across column width */
@@ -1170,7 +1233,7 @@ body {
 
   /* ── Snap label ── */
   #phos-snap-label {
-    font-size: 20px;
+    font-size: 30px;
     bottom:    auto;
     top:       15vh;
     transform: translateX(-50%);
@@ -1183,7 +1246,8 @@ body {
   }
 
   .corner-logo-img {
-    height: 10px;
+    height:     12px;
+    align-self: center;
   }
 
   /* ── Credits ── */
@@ -1195,7 +1259,7 @@ body {
 
   /* ── Scroll hint ── */
   #scroll-hint {
-    font-size:   15px;
+    font-size:   22px;
     bottom:      auto;
     top:         12vh;
     background:  rgba(20, 12, 6, 0.45);

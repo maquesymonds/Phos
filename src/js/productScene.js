@@ -192,7 +192,7 @@ export function initProductScene(glb) {
         child.material.emissiveIntensity = 2.0
       })
 
-      // PointLight inside bulb illuminates shade interior
+      // PointLight inside bulb — visual glow only, no shadows (shade blocks it)
       const innerLight = new THREE.PointLight(0xffcc66, 0.2, 1.2, 3)
       innerLight.name          = 'bulb_inner'
       innerLight.userData._min = 0.2
@@ -229,27 +229,29 @@ export function initProductScene(glb) {
 
 
   // ── Ambient light ─────────────────────────────────────────────
-  const ambient = new THREE.AmbientLight(0xfff0d0, 0.3)
+  const ambient = new THREE.AmbientLight(0xfff0d0, 0.08)
   ambient.name             = 'ambient'
-  ambient.userData._min    = 0.3
-  ambient.userData._max    = 1.1
+  ambient.userData._min    = 0.0
+  ambient.userData._max    = 0.5
   _scene.add(ambient)
   _glbLights.unshift({ light: ambient })   // first in panel
 
-  // ── Top light — illuminates the shade from above (warm, high reach) ─
-  const topLight = new THREE.SpotLight(0xffcc66, 9.8)
+  // ── Top light — subtle fill for shade exterior only, low intensity ─
+  const topLight = new THREE.SpotLight(0xffcc66, 1.5)
   topLight.name             = 'top_shade'
   topLight.position.set(0, 2.5, 0)
   topLight.target.position.set(0, 1.2, 0)
   topLight.angle    = Math.PI / 6
-  topLight.penumbra = 0.4
+  topLight.penumbra = 0.6
   topLight.decay    = 2
-  topLight.distance = 3
-  topLight.userData._min    = 9.8
-  topLight.userData._max    = 50
+  topLight.distance = 2.5
+  topLight.userData._min    = 0
+  topLight.userData._max    = 15
+
   _scene.add(topLight)
   _scene.add(topLight.target)
   _glbLights.push({ light: topLight })
+
 
   // ── Shade bounce — simulates shade re-emitting light onto base top ─
   // Positioned just below the shade rim, pointing straight down.
@@ -267,6 +269,33 @@ export function initProductScene(glb) {
   _scene.add(shadeBouncLight)
   _scene.add(shadeBouncLight.target)
   _glbLights.push({ light: shadeBouncLight })
+
+  // ── Lamp projected shadow — SpotLight at shade opening, pointing down ──
+  // bulb_inner is blocked by the shade mesh so can't cast shadows.
+  // This SpotLight sits just below the shade opening and projects the
+  // lamp's cone of light (and its shadows) onto the desk surface.
+  const lampShadow = new THREE.SpotLight(0xffcc88, 0.9)
+  lampShadow.name             = 'lamp_shadow'
+  lampShadow.position.set(0, 1.74, 0)
+  lampShadow.target.position.set(0, -0.5, 0)
+  lampShadow.angle            = 1.57
+  lampShadow.penumbra         = 0.52
+  lampShadow.decay            = 2.2
+  lampShadow.distance         = 3.0
+
+  lampShadow.castShadow            = true
+  lampShadow.shadow.mapSize.width  = 1024
+  lampShadow.shadow.mapSize.height = 1024
+  lampShadow.shadow.camera.near    = 0.1
+  lampShadow.shadow.camera.far     = 2.2
+  lampShadow.shadow.bias           = -0.0045
+  lampShadow.shadow.radius         = 3.5
+
+  lampShadow.userData._min = 0
+  lampShadow.userData._max = 6.0
+  _scene.add(lampShadow)
+  _scene.add(lampShadow.target)
+  _glbLights.push({ light: lampShadow })
 
   // ── Scene listeners (base / shade / intensity slider) ────────
   _setupSceneListeners()
@@ -331,8 +360,8 @@ export function activateProductScene() {
   setThreeScene(_scene)
   if (_camera) setCamera(_camera)
   _setupComposer()
-  // _buildLightDebugPanel()  // uncomment to show light controls
-  // _buildShadowDebugPanel()  // uncomment to show shadow controls
+  // _buildLightDebugPanel()
+  // _buildShadowDebugPanel()
 }
 
 /**
@@ -607,7 +636,7 @@ function _addContactShadow(nodeName, { offsetX, offsetY, offsetZ, opacity, scale
 function _buildShadowDebugPanel() {
   const panel = document.createElement('div')
   panel.id = 'shadow-debug'
-  panel.style.cssText = 'position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.75);color:#fff;padding:12px 16px;font-family:monospace;font-size:12px;border-radius:8px;min-width:260px'
+  panel.style.cssText = 'position:fixed;top:10px;left:300px;z-index:9999;background:rgba(0,0,0,0.75);color:#fff;padding:12px 16px;font-family:monospace;font-size:12px;border-radius:8px;min-width:260px;cursor:grab'
 
   const defaults = {
     _shadow_taza:     { opacity: 0.56, posX: -0.19, posY: 0.05,  posZ: 0.39, scale: 0.35, scaleX: 0.35, scaleZ: 0.35, rotY: 94  },
@@ -619,7 +648,7 @@ function _buildShadowDebugPanel() {
     { key: '_shadow_lapicera', label: 'lapicera' },
   ]
 
-  panel.innerHTML = `<p style="margin:0 0 8px;font-weight:bold">Contact Shadows</p>` + shadows.map(({ key, label }) => {
+  panel.innerHTML = `<div style="text-align:center;margin-bottom:6px;opacity:0.4;font-size:10px;letter-spacing:0.1em;user-select:none">⠿ drag</div><p style="margin:0 0 8px;font-weight:bold">Contact Shadows</p>` + shadows.map(({ key, label }) => {
     const d = defaults[key]
     return `
     <div style="margin-bottom:10px">
@@ -636,6 +665,23 @@ function _buildShadowDebugPanel() {
     </div>
   `}).join('')
   document.body.appendChild(panel)
+
+  // Drag to move
+  let _dx = 0, _dy = 0, _drag = false
+  panel.addEventListener('mousedown', (e) => {
+    if (e.target.tagName === 'INPUT') return
+    _drag = true
+    _dx = e.clientX - panel.getBoundingClientRect().left
+    _dy = e.clientY - panel.getBoundingClientRect().top
+    panel.style.cursor = 'grabbing'
+    e.preventDefault()
+  })
+  window.addEventListener('mousemove', (e) => {
+    if (!_drag) return
+    panel.style.left = (e.clientX - _dx) + 'px'
+    panel.style.top  = (e.clientY - _dy) + 'px'
+  })
+  window.addEventListener('mouseup', () => { _drag = false; panel.style.cursor = 'grab' })
 
   panel.querySelectorAll('input').forEach(input => {
     input.addEventListener('input', () => {
@@ -719,42 +765,157 @@ function _buildLightDebugPanel() {
     return `<label class="ldp-row">${light.name}<input type="range" min="0" max="${max}" step="0.1" value="${light.intensity.toFixed(1)}" data-glb-light="${light.uuid}"><span>${light.intensity.toFixed(1)}</span></label>`
   }).join('')
 
+  const camFovMult = CONFIG.cameraFovMultiplier ?? 0.68
+
   const panel = document.createElement('div')
   panel.id = 'light-debug'
+  panel.style.cursor = 'grab'
   panel.innerHTML = `
+    <div id="ldp-drag-handle" style="text-align:center;margin-bottom:6px;opacity:0.4;font-size:10px;letter-spacing:0.1em;user-select:none">⠿ drag</div>`
+  panel.innerHTML += `
     <p class="ldp-title">Lights</p>
     ${lightRows || '<p style="opacity:0.5;font-size:10px;margin:4px 0">No lights found</p>'}
-    <label class="ldp-row">trunk_glow<input type="range" id="trunk-glow-slider" min="0" max="2.2" step="0.05" value="0"><span id="trunk-glow-val">0.00</span></label>
+
+    <p class="ldp-title" style="margin-top:10px">Trunk glow</p>
+    <label class="ldp-row">strength<input type="range" id="dbg-trunk-strength" min="0" max="3" step="0.05" value="0"><span id="dbg-trunk-strength-val">0.00</span></label>
+    <label class="ldp-row">yTop<input type="range" id="dbg-trunk-ytop" min="0" max="3" step="0.01" value="${window.__trunkGlow?.yTop ?? 0.82}"><span id="dbg-trunk-ytop-val">${(window.__trunkGlow?.yTop ?? 0.82).toFixed(2)}</span></label>
+    <label class="ldp-row">yBottom<input type="range" id="dbg-trunk-ybot" min="-1" max="2" step="0.01" value="${window.__trunkGlow?.yBottom ?? 0.2}"><span id="dbg-trunk-ybot-val">${(window.__trunkGlow?.yBottom ?? 0.2).toFixed(2)}</span></label>
+
+    <p class="ldp-title" style="margin-top:10px">Shade emissive</p>
+    <label class="ldp-row">intensity<input type="range" id="dbg-shade-emit" min="0" max="2" step="0.01" value="0.5"><span id="dbg-shade-emit-val">0.50</span></label>
+
+    <p class="ldp-title" style="margin-top:10px">Camera</p>
+    <label class="ldp-row">fovMult<input type="range" id="dbg-cam-fov" min="0.3" max="1.5" step="0.01" value="${camFovMult}"><span id="dbg-cam-fov-val">${camFovMult.toFixed(2)}</span></label>
+
+    <p class="ldp-title" style="margin-top:10px">luz_abajo</p>
+    <label class="ldp-row">intensity<input type="range" id="dbg-luz-abajo" min="0" max="2" step="0.01" value="0"><span id="dbg-luz-abajo-val">0.00</span></label>
+
+    <p class="ldp-title" style="margin-top:10px">Shadows (lamp_shadow)</p>
+    <label class="ldp-row">posY<input type="range" id="dbg-shadow-posy" min="-0.5" max="2" step="0.01" value="1.74" style="width:110px"><span id="dbg-shadow-posy-val">1.74</span></label>
+    <label class="ldp-row">angle<input type="range" id="dbg-shadow-angle" min="0.1" max="1.57" step="0.01" value="1.57" style="width:110px"><span id="dbg-shadow-angle-val">1.57</span></label>
+    <label class="ldp-row">penumbra<input type="range" id="dbg-shadow-pen" min="0" max="1" step="0.01" value="0.52" style="width:110px"><span id="dbg-shadow-pen-val">0.52</span></label>
+    <label class="ldp-row">bias<input type="range" id="dbg-shadow-bias" min="-0.02" max="0.02" step="0.0005" value="-0.0045" style="width:110px"><span id="dbg-shadow-bias-val">-0.0045</span></label>
+    <label class="ldp-row">radius<input type="range" id="dbg-shadow-radius" min="0" max="8" step="0.1" value="3.5" style="width:110px"><span id="dbg-shadow-radius-val">3.5</span></label>
+    <label class="ldp-row">far<input type="range" id="dbg-shadow-far" min="0.5" max="6" step="0.1" value="2.2" style="width:110px"><span id="dbg-shadow-far-val">2.2</span></label>
   `
   document.body.appendChild(panel)
 
-  const lightByUuid = new Map(_glbLights.map(({ light }) => [light.uuid, light]))
+  // ── Drag to move ─────────────────────────────────────────────
+  let _dragOffX = 0, _dragOffY = 0, _dragging = false
+  panel.addEventListener('mousedown', (e) => {
+    if (e.target.tagName === 'INPUT') return
+    _dragging  = true
+    _dragOffX  = e.clientX - panel.getBoundingClientRect().left
+    _dragOffY  = e.clientY - panel.getBoundingClientRect().top
+    panel.style.cursor = 'grabbing'
+    e.preventDefault()
+  })
+  window.addEventListener('mousemove', (e) => {
+    if (!_dragging) return
+    panel.style.left = (e.clientX - _dragOffX) + 'px'
+    panel.style.top  = (e.clientY - _dragOffY) + 'px'
+    panel.style.right = 'auto'
+  })
+  window.addEventListener('mouseup', () => {
+    _dragging = false
+    panel.style.cursor = 'grab'
+  })
 
+  // ── GLB lights ──────────────────────────────────────────────
+  const lightByUuid = new Map(_glbLights.map(({ light }) => [light.uuid, light]))
   panel.querySelectorAll('input[data-glb-light]').forEach((slider) => {
     slider.addEventListener('input', () => {
       const val   = parseFloat(slider.value)
       const light = lightByUuid.get(slider.dataset.glbLight)
       slider.nextElementSibling.textContent = val.toFixed(1)
-      if (light) {
-        light.intensity               = val
-        light.userData._baseIntensity = val
-      }
+      if (light) { light.intensity = val; light.userData._baseIntensity = val }
     })
   })
 
-  // Trunk glow slider — updates the shader uniform on all trunk meshes
-  const trunkSlider = panel.querySelector('#trunk-glow-slider')
-  const trunkVal    = panel.querySelector('#trunk-glow-val')
-  trunkSlider.addEventListener('input', () => {
-    const val = parseFloat(trunkSlider.value)
-    trunkVal.textContent = val.toFixed(2)
-    const TRUNK_NAMES = ['base1', 'base11', 'base2', 'base3', 'base2_still', 'base3_still']
+  // ── Trunk glow ──────────────────────────────────────────────
+  const TRUNK_NAMES = ['base1', 'base11', 'base2', 'base3', 'base2_still', 'base3_still']
+  function _updateTrunkUniforms() {
     TRUNK_NAMES.forEach(name => {
-      const node = _nodeMap[name]
-      if (!node) return
-      const shader = node.userData._trunkShader
-      if (shader) shader.uniforms.uTrunkGlowStrength.value = val
+      const shader = _nodeMap[name]?.userData._trunkShader
+      if (!shader) return
+      shader.uniforms.uTrunkGlowStrength.value = parseFloat(panel.querySelector('#dbg-trunk-strength').value)
+      shader.uniforms.uTrunkYTop.value         = parseFloat(panel.querySelector('#dbg-trunk-ytop').value)
+      shader.uniforms.uTrunkYBottom.value      = parseFloat(panel.querySelector('#dbg-trunk-ybot').value)
     })
+  }
+  panel.querySelector('#dbg-trunk-strength').addEventListener('input', (e) => {
+    panel.querySelector('#dbg-trunk-strength-val').textContent = parseFloat(e.target.value).toFixed(2)
+    _updateTrunkUniforms()
+  })
+  panel.querySelector('#dbg-trunk-ytop').addEventListener('input', (e) => {
+    panel.querySelector('#dbg-trunk-ytop-val').textContent = parseFloat(e.target.value).toFixed(2)
+    _updateTrunkUniforms()
+  })
+  panel.querySelector('#dbg-trunk-ybot').addEventListener('input', (e) => {
+    panel.querySelector('#dbg-trunk-ybot-val').textContent = parseFloat(e.target.value).toFixed(2)
+    _updateTrunkUniforms()
+  })
+
+  // ── Shade emissive ──────────────────────────────────────────
+  panel.querySelector('#dbg-shade-emit').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-shade-emit-val').textContent = val.toFixed(2)
+    ;['shade_01', 'shade_02'].forEach(name => {
+      const mesh = _nodeMap[name]
+      if (mesh?.material) mesh.material.emissiveIntensity = val
+    })
+  })
+
+  // ── Camera FOV ──────────────────────────────────────────────
+  panel.querySelector('#dbg-cam-fov').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-cam-fov-val').textContent = val.toFixed(2)
+    if (_camera?.isPerspectiveCamera) {
+      _camera.fov = _camera.userData._baseFov * val
+      _camera.updateProjectionMatrix()
+    }
+  })
+
+  // ── luz_abajo ───────────────────────────────────────────────
+  panel.querySelector('#dbg-luz-abajo').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-luz-abajo-val').textContent = val.toFixed(2)
+    const luz = _nodeMap['luz_abajo']
+    if (luz) luz.intensity = val
+  })
+
+  // ── Shadows ─────────────────────────────────────────────────
+  const shadowRef = _glbLights.find(({ light }) => light.name === 'lamp_shadow')?.light
+
+  panel.querySelector('#dbg-shadow-posy').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-shadow-posy-val').textContent = val.toFixed(2)
+    if (shadowRef) shadowRef.position.y = val
+  })
+  panel.querySelector('#dbg-shadow-angle').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-shadow-angle-val').textContent = val.toFixed(2)
+    if (shadowRef) shadowRef.angle = val
+  })
+  panel.querySelector('#dbg-shadow-pen').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-shadow-pen-val').textContent = val.toFixed(2)
+    if (shadowRef) shadowRef.penumbra = val
+  })
+  panel.querySelector('#dbg-shadow-bias').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-shadow-bias-val').textContent = val.toFixed(4)
+    if (shadowRef) shadowRef.shadow.bias = val
+  })
+  panel.querySelector('#dbg-shadow-radius').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-shadow-radius-val').textContent = val.toFixed(1)
+    if (shadowRef) shadowRef.shadow.radius = val
+  })
+  panel.querySelector('#dbg-shadow-far').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value)
+    panel.querySelector('#dbg-shadow-far-val').textContent = val.toFixed(1)
+    if (shadowRef) { shadowRef.shadow.camera.far = val; shadowRef.shadow.camera.updateProjectionMatrix() }
   })
 }
 
@@ -802,6 +963,7 @@ function _patchCameraAspect(cam) {
     const multiplier = isMobile
       ? (CONFIG.cameraFovMultiplierMobile ?? 1.1)
       : (CONFIG.cameraFovMultiplier ?? 1.0)
+    cam.userData._baseFov = cam.fov   // saved for debug FOV slider
     cam.fov    = cam.fov * multiplier
     cam.aspect = window.innerWidth / window.innerHeight
     cam.updateProjectionMatrix()

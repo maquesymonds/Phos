@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PHOS — Light for slower moments</title>
-  <script type="module" crossorigin src="/assets/index-CO6TnYWc.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-C_675saV.css">
+  <link rel="icon" type="image/png" href="/images/Favicon.png" />
+  <script type="module" crossorigin src="/assets/index-DYOyOIZs.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-ClyWpYx8.css">
 </head>
 <body>
 
@@ -54,12 +55,18 @@
   <button id="begin-btn">Begin experience</button>
 
   <!-- Corner logo: fades in after activation, replaces hero brand mark -->
-  <div id="corner-logo">Phōs</div>
+  <div id="corner-logo">
+    <span class="corner-logo-text">Phōs</span>
+    <img class="corner-logo-img" src="/images/logo.png" alt="Phōs logo" />
+  </div>
 
   <!-- Scroll hint: fades in on activation, fades out on first scroll -->
   <div id="scroll-hint">Scroll to navigate</div>
 
   <!-- ─── PERSISTENT UI ────────────────────────────────────── -->
+
+  <!-- Mobile-only header veil: gradient behind nav for readability -->
+  <div id="mobile-header-veil"></div>
 
   <!-- Top-right navigation -->
   <nav id="main-nav">
@@ -78,6 +85,7 @@
       </button>
 
       <button id="menu-toggle" aria-expanded="false">Menu</button>
+      <a id="nav-buy" href="https://wa.me/59892210971" target="_blank" rel="noopener noreferrer">Buy</a>
 
     </div>
 
@@ -97,47 +105,53 @@
   <aside id="custom-panel">
     <p class="panel-label">Make it yours</p>
 
-    <div class="panel-section">
-      <span class="panel-section-label">Base</span>
-      <div class="swatch-row swatch-row--images" id="base-swatches">
-        <button class="swatch-img swatch--base active" data-base="0" aria-label="Helios">
-          <img src="/images/helios.png" alt="Helios" />
-          <span class="swatch-img-label">Helios</span>
-        </button>
-        <button class="swatch-img swatch--base" data-base="1" aria-label="Eos">
-          <img src="/images/eos.png" alt="Eos" />
-          <span class="swatch-img-label">Eos</span>
-        </button>
-        <button class="swatch-img swatch--base" data-base="2" aria-label="Apolo">
-          <img src="/images/apolo.png" alt="Apolo" />
-          <span class="swatch-img-label">Apolo</span>
-        </button>
+    <div class="panel-card">
+      <div class="panel-section">
+        <span class="panel-section-label">Base</span>
+        <div class="swatch-row swatch-row--images" id="base-swatches">
+          <button class="swatch-img swatch--base active" data-base="0" aria-label="Helios">
+            <img src="/images/helios.png" alt="Helios" />
+            <span class="swatch-img-label">Helios</span>
+          </button>
+          <button class="swatch-img swatch--base" data-base="1" aria-label="Eos">
+            <img src="/images/eos.png" alt="Eos" />
+            <span class="swatch-img-label">Eos</span>
+          </button>
+          <button class="swatch-img swatch--base" data-base="2" aria-label="Apolo">
+            <img src="/images/apolo.png" alt="Apolo" />
+            <span class="swatch-img-label">Apolo</span>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div class="panel-section">
-      <span class="panel-section-label">Pantalla</span>
-      <div class="screen-toggle" id="shade-swatches">
-        <button class="shade-option swatch--shade active" data-shade="0" aria-label="Green screen">Green</button>
-        <button class="shade-option swatch--shade" data-shade="1" aria-label="White screen">White</button>
+      <div class="panel-section">
+        <span class="panel-section-label">Shade</span>
+        <div class="screen-toggle" id="shade-swatches">
+          <button class="shade-option swatch--shade active" data-shade="0" aria-label="Green screen">
+            <span class="shade-dot" style="background:#9F8B53;"></span>
+          </button>
+          <button class="shade-option swatch--shade" data-shade="1" aria-label="White screen">
+            <span class="shade-dot" style="background:#e8e0d0;"></span>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div class="panel-section">
-      <span class="panel-section-label">Light</span>
-      <div class="slider-row">
-        <svg class="slider-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="4"/>
-          <line x1="12" y1="2" x2="12" y2="5"/>
-          <line x1="12" y1="19" x2="12" y2="22"/>
-          <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
-          <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
-          <line x1="2" y1="12" x2="5" y2="12"/>
-          <line x1="19" y1="12" x2="22" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
-          <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
-        </svg>
-        <input type="range" id="light-slider" min="0" max="100" value="60" />
+      <div class="panel-section">
+        <span class="panel-section-label">Light</span>
+        <div class="slider-row">
+          <svg class="slider-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="5"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+            <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+            <line x1="2" y1="12" x2="5" y2="12"/>
+            <line x1="19" y1="12" x2="22" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+            <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+          </svg>
+          <input type="range" id="light-slider" min="0" max="100" value="60" />
+        </div>
       </div>
     </div>
   </aside>
@@ -167,6 +181,7 @@
         <p class="gallery-intro-line">to shared rooms.</p>
         <p class="gallery-intro-line">From arrival</p>
         <p class="gallery-intro-line">to rest.</p>
+        <a href="https://wa.me/59892210971" target="_blank" rel="noopener noreferrer" class="gallery-cta">Get my Phōs</a>
       </div>
 
       <!-- Placeholder image cards                                      -->
@@ -197,28 +212,25 @@
         <p class="card-label">Study</p>
       </article>
 
-      <!-- ─── LOOP CARD (last carousel item) ─────────────────── -->
-      <!-- This card scales up to fullscreen as the user keeps    -->
-      <!-- scrolling, looping the experience back to the hero.    -->
-      <!-- ─────────────────────────────────────────────────────── -->
-      <!-- PLACEHOLDER: replace the inner div with an <img> tag   -->
-      <!-- when the hero photograph is ready. Keep the class       -->
-      <!-- "loop-card-image" so the ScrollTrigger target is intact.-->
-      <!-- The image should match the opening 3D hero scene        -->
-      <!-- (lamp on desk, warm light, same camera angle).          -->
-      <article class="gallery-card gallery-card--loop">
-        <div class="loop-card-image"></div>
-      </article>
-      <!-- END LOOP CARD ─────────────────────────────────────────  -->
 
     </div>
   </section>
 
   <!-- ─── FOOTER ───────────────────────────────────────────── -->
+  <!-- Transition back to the initial 3D scene after gallery -->
+  <section id="scene-return">
+    <canvas id="transition-canvas"></canvas>
+  </section>
+
+  <!-- Fixed corner credits -->
+  <div id="credit-studio">Estudio Once</div>
+  <div id="credit-filamento">by Filamento</div>
+
   <footer id="site-footer">
     <span class="footer-brand">PHOS</span>
     <span class="footer-copy">Designed and made in Uruguay</span>
   </footer>
+
 
 </body>
 </html>

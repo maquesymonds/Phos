@@ -17,7 +17,7 @@ import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { CONFIG } from './config.js'
 import { slideInObjects, animateLightsIn } from './productScene.js'
-import { playEntrance }  from './audio.js'
+import { playEntrance, unlockAudio }  from './audio.js'
 
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger)
 
@@ -171,6 +171,9 @@ export function revealHero() {
 function _onBegin() {
   if (_activated) return
   _activated = true
+
+  // Unlock AudioContext synchronously inside the gesture (required on iOS)
+  unlockAudio()
 
   // Play entrance sound
   playEntrance()
@@ -329,6 +332,8 @@ function _stopWaveLoop() {
 }
 
 function _onSoundToggle() {
+  // Ensure AudioContext is unlocked on mobile (safe to call repeatedly)
+  unlockAudio()
   _muted = !_muted
   _emit('phos:soundToggle', { muted: _muted })
   if (_muted) _stopWaveLoop()
