@@ -96,6 +96,10 @@ export const CONFIG = {
     toneMapping:         'ACESFilmic',
     toneMappingExposure: 0.9,
     shadowMapEnabled:    true,
+    // Atmosphere shader resolution, relative to CSS pixels (not device pixels).
+    // The fog is soft, so it renders off-screen at this scale and is
+    // upscaled — on Retina, 0.5 shades 1/16 of the pixels.
+    backgroundScale:     0.5,
   },
 
   // ── Camera zoom ──────────────────────────────────────────────

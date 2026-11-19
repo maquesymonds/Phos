@@ -21,7 +21,8 @@
 // ─────────────────────────────────────────────────────────────
 
 import * as THREE from 'three'
-import { onTick } from './scene.js'
+import { onTick, getRenderer } from './scene.js'
+import { CONFIG } from './config.js'
 
 // ─── Fixed color palette ───────────────────────────────────────
 // Tune these three values to shift the whole color mood.
@@ -47,8 +48,11 @@ const D = {
 
 // ─── Module state ─────────────────────────────────────────────
 
-let _material = null
-let _mesh     = null
+let _material = null   // heavy atmosphere shader — renders into _target
+let _mesh     = null   // full-screen quad in the main scene showing _target
+let _target   = null   // low-res render target (CONFIG.renderer.backgroundScale)
+let _bgScene  = null
+let _bgCamera = null
 
 
 // ─── Shaders ──────────────────────────────────────────────────
@@ -220,9 +224,28 @@ const fragmentShader = /* glsl */`
 
     // ── Gamma + opacity ───────────────────────────────────────
     col = pow(max(col, vec3(0.0)), vec3(1.0 / 2.2));
-    gl_FragColor = vec4(col * uOpacity, 1.0);
+    gl_FragColor = vec4(col, 1.0);   // opacity is applied in the display pass
   }
 `
+
+// Display pass: upscales the low-res atmosphere. Output is already
+// gamma-encoded by the atmosphere shader, so it is copied untouched.
+const displayFragmentShader = /* glsl */`
+  uniform sampler2D tAtmosphere;
+  uniform float     uOpacity;
+  varying vec2      vUv;
+  void main() {
+    gl_FragColor = vec4(texture2D(tAtmosphere, vUv).rgb * uOpacity, 1.0);
+  }
+`
+
+function _targetSize() {
+  const scale = CONFIG.renderer.backgroundScale ?? 0.5
+  return [
+    Math.max(1, Math.round(window.innerWidth  * scale)),
+    Math.max(1, Math.round(window.innerHeight * scale)),
+  ]
+}
 
 // ─── Public ────────────────────────────────────────────────────
 
@@ -253,21 +276,50 @@ export function initBackground(scene) {
     depthTest:   false,
   })
 
-  _mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), _material)
+  // Off-screen pass: atmosphere shader → low-res target
+  const quad = new THREE.PlaneGeometry(2, 2)
+  _target   = new THREE.WebGLRenderTarget(..._targetSize(), { depthBuffer: false })
+  _bgScene  = new THREE.Scene()
+  _bgCamera = new THREE.Camera()
+  const bgMesh = new THREE.Mesh(quad, _material)
+  bgMesh.frustumCulled = false
+  _bgScene.add(bgMesh)
+
+  // On-screen pass: cheap quad in the main scene, behind everything
+  const displayMaterial = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader: displayFragmentShader,
+    uniforms: {
+      tAtmosphere: { value: _target.texture },
+      uOpacity:    _material.uniforms.uOpacity,   // shared — setBackgroundOpacity drives both
+    },
+    depthWrite: false,
+    depthTest:  false,
+  })
+  _mesh = new THREE.Mesh(quad, displayMaterial)
   _mesh.frustumCulled = false
   _mesh.renderOrder   = -1
   scene.add(_mesh)
 
 
   // ── Tick ───────────────────────────────────────────────────
+  // Runs before the main render each frame (scene.js loop order).
   onTick((elapsed) => {
     const u = _material.uniforms
     u.uTime.value = elapsed
+    if (!_mesh.visible || u.uOpacity.value <= 0) return
 
+    const renderer = getRenderer()
+    const prev = renderer.getRenderTarget()
+    renderer.setRenderTarget(_target)
+    renderer.render(_bgScene, _bgCamera)
+    renderer.setRenderTarget(prev)
   })
 
   window.addEventListener('resize', () => {
-    if (_material) _material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight)
+    if (!_material) return
+    _material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight)
+    _target.setSize(..._targetSize())
   })
 
 }

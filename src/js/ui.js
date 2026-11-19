@@ -181,8 +181,16 @@ function _onBegin() {
   // Animate lights from min → max over 3 seconds
   animateLightsIn()
 
-  // Remove canvas blur and dark overlay
-  document.getElementById('phos-canvas').classList.add('is-active')
+  // Remove canvas blur and dark overlay.
+  // Once the unblur transition ends, drop the filter entirely — even
+  // blur(0px) keeps the full-screen canvas on a costly filter layer.
+  const canvas = document.getElementById('phos-canvas')
+  canvas.addEventListener('transitionend', function onUnblur(e) {
+    if (e.propertyName !== 'filter') return
+    canvas.style.filter = 'none'
+    canvas.removeEventListener('transitionend', onUnblur)
+  })
+  canvas.classList.add('is-active')
   document.getElementById('hero-dim').classList.add('is-gone')
 
   // Slide props in immediately on button press
